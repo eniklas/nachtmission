@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 60152e165ef62b2469c52273cd92bc54
+timeCreated: 1508912136
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - jet: {fileID: 1885441969409682, guid: 37392ad1da220e64cb95ead1bb76528f, type: 2}
+  - drone: {fileID: 1517327210812466, guid: 62ebbf730ed122e4a9e2457fca64a5ac, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
