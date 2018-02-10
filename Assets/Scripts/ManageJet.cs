@@ -10,14 +10,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// TODO: jet should attack from right sometimes, e.g. when taking prisoners back
-// TODO: jet should attack head on sometimes, roll without swoop
-// TODO: missile trajectory needs improving; swoop should happen closer. Use drag or a retardant force over time
-// TODO: jet should shoot chopper down if it doesn't stop (currently can just ignore it)
 public class ManageJet : MonoBehaviour {
     private float       enemyTerritoryBoundary;         // X position dividing enemy and friendly territory
-    private float       speed = 25.0f;                  // Horizontal speed
-    private float       missileSpeed = 50.0f;
+    private const float DEFAULT_SPEED = 25.0f;          // Default speed of jet
+    private float       speed = DEFAULT_SPEED;          // Current speed of jet
+    private float       missileSpeed = 50.0f;           // Speed of missiles when fired
     private const int   ENGINE_SOUND_OFFSET = 0;        // Offset (in Inspector) for jet engine sound
     private const int   FIRE_SOUND_OFFSET = 1;          // Offset (in Inspector) for missile firing sound
     private const float TIME_TO_ACCELERATE = 0.5f;      // How long it takes to match chopper's speed
@@ -203,7 +200,6 @@ public class ManageJet : MonoBehaviour {
         // TODO: loop through the missiles
         missileLeft.transform.parent = null;
         missileLeft.GetComponent<Rigidbody>().useGravity = true;
-        // TODO: missile trajectory needs more work. Play with gravity/downward force/drag
         missileLeft.GetComponent<Rigidbody>().AddForce(Vector3.left * missileSpeed, ForceMode.VelocityChange);
         missileLeft.GetComponent<Rigidbody>().AddForce(Vector3.down * 250, ForceMode.Acceleration);
         missileLeft.GetComponent<Rigidbody>().detectCollisions = true;
@@ -227,8 +223,9 @@ Debug.Log("Starting retreat.");
             isHunting = false;
             isRetreating = true;
             isSwooping = false;
-            psMainLeftExhaust.startSizeMultiplier = 5;  // Intensify jets
+            psMainLeftExhaust.startSizeMultiplier = 5;      // Intensify jets
             psMainRightExhaust.startSizeMultiplier = 5;
+            if (!chopperMoving) speed = DEFAULT_SPEED;
         }
 
         retreatTime += Time.deltaTime;
@@ -244,7 +241,7 @@ Debug.Log("Starting retreat.");
 
     void OnCollisionEnter(Collision col) {
         // Wide collider on jet makes it too easy to collide; don't collide before attack
-        if (col.gameObject.tag == "chopper" && !isHunting && !isSwooping) {
+        if (col.gameObject.tag == "chopper" && isRetreating) {
             GameObject expClone = GameObject.Instantiate(explosion, col.gameObject.transform.position,
                 Quaternion.identity);
             Destroy(expClone, 3);   // Explosion lasts 3 secs

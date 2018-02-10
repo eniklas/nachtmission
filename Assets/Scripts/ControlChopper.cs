@@ -360,9 +360,12 @@ public class ControlChopper : MonoBehaviour {
             isCrashing = true;
             timeCrashing = 0.0f;
 
-            // Stop tanks from firing
+            // Stop tanks from firing and moving
             foreach (GameObject turret in GameObject.FindGameObjectsWithTag("turret"))
                 turret.GetComponent<ControlTurret>().enabled = false;
+
+            foreach (GameObject tank in GameObject.FindGameObjectsWithTag("tank"))
+                tank.GetComponent<ManageTank>().enabled = false;
 
             gameObject.GetComponent<Rigidbody>().useGravity = true;
             gameObject.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.None;
@@ -400,6 +403,9 @@ public class ControlChopper : MonoBehaviour {
                 // Crash scene is done; set tanks back to active
                 foreach (GameObject turret in GameObject.FindGameObjectsWithTag("turret"))
                     turret.GetComponent<ControlTurret>().enabled = true;
+
+                foreach (GameObject tank in GameObject.FindGameObjectsWithTag("tank"))
+                    tank.GetComponent<ManageTank>().enabled = true;
             }
 
             uiScript.chopperDestroyed();
