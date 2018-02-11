@@ -13,17 +13,18 @@ using UnityEngine;
 public class ManageJet : MonoBehaviour {
     private float       enemyTerritoryBoundary;         // X position dividing enemy and friendly territory
     private const float DEFAULT_SPEED = 25.0f;          // Default speed of jet
-    private float       speed = DEFAULT_SPEED;          // Current speed of jet
+    private float       speed;                          // Current speed of jet
     private float       missileSpeed = 50.0f;           // Speed of missiles when fired
     private const int   ENGINE_SOUND_OFFSET = 0;        // Offset (in Inspector) for jet engine sound
     private const int   FIRE_SOUND_OFFSET = 1;          // Offset (in Inspector) for missile firing sound
     private const float TIME_TO_ACCELERATE = 0.5f;      // How long it takes to match chopper's speed
+    private const float MAX_ACCELERATION = 1.33f;       // Max acceleration after TIME_TO_ACCELERATE has passed
     private const float TIME_TO_ROLL = 1.0f;            // How long it takes to roll
-    private const float FINAL_ROLL_ANGLE = 90.0f;       // Z rotation
+    private float       finalRollAngle;                 // Z rotation at end of swoop
     private float       rollTime = 0.0f;                // How long jet has been rolling
     private float       roll;                           // Current roll angle
     private const float TIME_TO_SWOOP = 1.0f;           // How long it takes to swoop
-    private const float FINAL_SWOOP_ANGLE = 270.0f;     // Final angle about Y after swooping
+    private float       finalSwoopAngle;                // Final angle about Y after swooping
     private const float SWOOP_DROP_DISTANCE = 5.0f;     // Drop this far while swooping
     private const float SWOOP_CHOPPER_DISTANCE = 20.0f; // X distance past chopper to swoop
     private float       swoopTime = 0.0f;               // How long jet has been swooping
@@ -44,31 +45,27 @@ public class ManageJet : MonoBehaviour {
     private bool        isHunting = true;
     private bool        isSwooping = false;
     private bool        isRetreating = false;
-    private bool        isHeadingRight = true;          // True if jet is heading to the right; false if heading left
-    private float       CHOPPER_STILL_MAX_SPEED = 10.0f; // Max speed at which chopper is considered to be still
+    private bool        isHeadingRight;                 // True if jet is heading to the right; false if heading left
+    private float       chopperStillMaxSpeed;           // Max speed at which chopper is considered to be still
     private bool        chopperMoving = false;          // True if chopper is nearly still; used for swooping
     private GameObject  chopper;
-    private GameObject  missileLeft;
-    private GameObject  missileRight;
+    private GameObject[] missiles = new GameObject[2];  // Array of missiles attached to jet
     public  GameObject  explosion;
     private AudioSource engineSound;
     private ParticleSystem.MainModule psMainLeftExhaust;  // Used to intensify jet exhaust during retreat
     private ParticleSystem.MainModule psMainRightExhaust;
 
     void Awake() {
-        transform.Rotate(0, 90, 0);    // Orient the jet facing right, wings parallel to Z axis
-        initialYPos = transform.position.y;
-        initialZPos = transform.position.z;
-        initialRoll = transform.eulerAngles.z;
-        initialPitch = transform.eulerAngles.y;
         // Note that using GameObject.Find would always find the first
         //  missileLeft object, not necessarily the child of this jet
-        missileLeft = transform.Find("MissileLeft").gameObject;
-        missileLeft.GetComponent<Rigidbody>().detectCollisions = false;             // Disable Rigidbody until launched
-        missileLeft.transform.Find("MissileExhaust").gameObject.SetActive(false);   // Disable exhaust effect
-        missileRight = transform.Find("MissileRight").gameObject;
-        missileRight.GetComponent<Rigidbody>().detectCollisions = false;
-        missileRight.transform.Find("MissileExhaust").gameObject.SetActive(false);
+        missiles[0] = transform.Find("MissileLeft").gameObject;
+        missiles[1] = transform.Find("MissileRight").gameObject;
+
+        foreach (GameObject missile in missiles) {
+            missile.GetComponent<Rigidbody>().detectCollisions = false;             // Disable Rigidbody until launched
+            missile.transform.Find("MissileExhaust").gameObject.SetActive(false);   // Disable exhaust effect
+        }
+
         psMainLeftExhaust = transform.Find("JetExhaustLeft").GetComponent<ParticleSystem>().main;
         psMainRightExhaust = transform.Find("JetExhaustRight").GetComponent<ParticleSystem>().main;
         engineSound = GetComponents<AudioSource>()[ENGINE_SOUND_OFFSET];
@@ -76,12 +73,34 @@ public class ManageJet : MonoBehaviour {
 
 	void Start () {
 		chopper = GameObject.Find("Chopper");
-        finalZPos = chopper.transform.position.z;
         enemyTerritoryBoundary = GameObject.Find("LeftRiverBoundary").transform.position.x;
+        chopperStillMaxSpeed = GameObject.Find("Enemies").GetComponent<SpawnEnemies>().chopperStillMaxSpeed;
+
+        // Orient the jet depending on whether it was spawned to the left or right of chopper
+        if (transform.position.x > chopper.transform.position.x) {
+            isHeadingRight = false;
+            transform.Rotate(0, 270, 0);    // Jet facing left, wings parallel to Z axis
+            finalSwoopAngle = 90.0f;
+            finalRollAngle = -90.0f;
+            speed = -DEFAULT_SPEED;
+        }
+        else {
+            isHeadingRight = true;
+            transform.Rotate(0, 90, 0);     // Jet facing right
+            finalSwoopAngle = 270.0f;
+            finalRollAngle = 90.0f;
+            speed = DEFAULT_SPEED;
+        }
+
+        initialYPos = transform.position.y;
+        initialZPos = transform.position.z;
+        initialRoll = transform.eulerAngles.z;
+        initialPitch = transform.eulerAngles.y;
+        finalZPos = chopper.transform.position.z;
 	}
 	
 	void Update () {
-        if (Time.frameCount % 10 == 0) Debug.Log("Jet speed = " + speed);
+        if (Time.frameCount % 25 == 0) Debug.Log("Jet speed = " + speed);
         transform.position = new Vector3(GetXPos(), GetYPos(), GetZPos());
         // Could also use a finite state machine for this
         if (isHunting) Hunt();
@@ -94,19 +113,22 @@ public class ManageJet : MonoBehaviour {
             accelerationTime += Time.deltaTime;
 
             if (chopperMoving) {
-                if (accelerationTime < TIME_TO_ACCELERATE) acceleration = accelerationTime / TIME_TO_ACCELERATE;
-                else acceleration = 1.0f;
-                Debug.Log("acceleration = " + acceleration);
+                if (accelerationTime < TIME_TO_ACCELERATE)
+                    acceleration = MAX_ACCELERATION * accelerationTime / TIME_TO_ACCELERATE;
+                else
+                    acceleration = MAX_ACCELERATION;
             }
             else acceleration = 0;
 
             if (swoopTime < TIME_TO_SWOOP / 2)
-                return transform.position.x + ((TIME_TO_SWOOP / 2) - swoopTime) * Time.deltaTime * speed + (acceleration * speed * Time.deltaTime);
+                return transform.position.x + ((TIME_TO_SWOOP / 2) - swoopTime) * Time.deltaTime * speed +
+                    (acceleration * speed * Time.deltaTime);
+
             else
-                return transform.position.x - (swoopTime - (TIME_TO_SWOOP / 2)) * Time.deltaTime * speed + (acceleration * speed * Time.deltaTime);
+                return transform.position.x - (swoopTime - (TIME_TO_SWOOP / 2)) * Time.deltaTime * speed +
+                    (acceleration * speed * Time.deltaTime);
         }
 
-        else if (isRetreating) return transform.position.x - Time.deltaTime * Mathf.Abs(speed);
         else return transform.position.x + Time.deltaTime * speed;
     }
 
@@ -126,22 +148,30 @@ public class ManageJet : MonoBehaviour {
     }
 
     void Hunt() {
-        // Fly to the right until we've just passed the chopper; swoop closer if chopper is moving
-        if (Mathf.Abs(transform.position.x - chopper.transform.position.x) < SWOOP_CHOPPER_DISTANCE &&
-            Mathf.Abs(chopper.GetComponent<ControlChopper>().hSpeed) > CHOPPER_STILL_MAX_SPEED) {
-                chopperMoving = true;
-                Debug.Log("Chopper hspeed = " + chopper.GetComponent<ControlChopper>().hSpeed + ", chopperMoving = true");
-        }
+        // Fly a bit further past the chopper if it's relatively still, so the chopper will get
+        //  shot down if it doesn't react to the swooping jet, whether it's moving or not
+		if (isHeadingRight &&
+           ((transform.position.x > chopper.transform.position.x + (SWOOP_CHOPPER_DISTANCE / 2) &&
+            chopperMoving) ||
+		   (transform.position.x > chopper.transform.position.x + SWOOP_CHOPPER_DISTANCE &&
+            !chopperMoving)) ||
 
-        // Fly a bit further past the chopper if it's relatively still, so the chopper will get shot down
-        //  if it doesn't react to the swooping jet, independent of whether it's moving and how fast
-		if ((transform.position.x > chopper.transform.position.x + (SWOOP_CHOPPER_DISTANCE / 2) && chopperMoving) ||
-		   (transform.position.x > chopper.transform.position.x + SWOOP_CHOPPER_DISTANCE && !chopperMoving)) {
+		   (!isHeadingRight &&
+           ((transform.position.x < chopper.transform.position.x - (SWOOP_CHOPPER_DISTANCE / 2) &&
+            chopperMoving) ||
+		   (transform.position.x < chopper.transform.position.x - SWOOP_CHOPPER_DISTANCE &&
+            !chopperMoving)))) {
                 isHeadingRight = !isHeadingRight;   // Change direction
+
+                Debug.Log("Chopper hspeed = " + chopper.GetComponent<ControlChopper>().hSpeed);
+                if (Mathf.Abs(chopper.GetComponent<ControlChopper>().hSpeed) > chopperStillMaxSpeed) {
+                    chopperMoving = true;
+                    Debug.Log("chopperMoving = true");
+                }
                 Swoop();
         }
 
-        // If we end up right of the river, take off (should only happen while hunting)
+        // If we end up right of the river, take off eh (should only happen while hunting)
         if (transform.position.x > enemyTerritoryBoundary) Retreat();
     }
 
@@ -149,10 +179,13 @@ public class ManageJet : MonoBehaviour {
         rollTime += Time.deltaTime;
 
         if (rollTime >= TIME_TO_ROLL)
-            // TODO: understand why -1.5f works
-            transform.Rotate(Vector3.forward, -1.5f, Space.Self);
+            if (isHeadingRight)
+                transform.Rotate(Vector3.forward, 1.5f, Space.Self);
+            else
+                // TODO: understand why -1.5f works
+                transform.Rotate(Vector3.forward, -1.5f, Space.Self);
         else {
-            roll = Time.deltaTime / TIME_TO_ROLL * (initialRoll - FINAL_ROLL_ANGLE);
+            roll = Time.deltaTime / TIME_TO_ROLL * (initialRoll - finalRollAngle);
             transform.Rotate(Vector3.forward, roll, Space.Self);
         }
     }
@@ -183,11 +216,11 @@ public class ManageJet : MonoBehaviour {
         else finalYPos = initialYPos - SWOOP_DROP_DISTANCE;
 
         swoopTime += Time.deltaTime;
-        swoopRotation = Time.deltaTime * (FINAL_SWOOP_ANGLE - initialPitch) / TIME_TO_SWOOP;
+        swoopRotation = Time.deltaTime * (finalSwoopAngle - initialPitch) / TIME_TO_SWOOP;
 
         if (swoopTime >= TIME_TO_SWOOP) {
-            // FIXME: this doesn't work; need to fiddle with FINAL_SWOOP_ANGLE and possibly swoopRotation formula
-//              transform.Rotate(Vector3.up, FINAL_SWOOP_ANGLE, Space.World);
+            // FIXME: this doesn't work; need to fiddle with finalSwoopAngle and possibly swoopRotation formula
+//              transform.Rotate(Vector3.up, finalSwoopAngle, Space.World);
             Attack();
         }
         else transform.Rotate(Vector3.up, swoopRotation, Space.World);
@@ -197,20 +230,17 @@ public class ManageJet : MonoBehaviour {
 
     void Attack() {
         // Fire; detach missiles from jet, enable colliders and gravity, and add force
-        // TODO: loop through the missiles
-        missileLeft.transform.parent = null;
-        missileLeft.GetComponent<Rigidbody>().useGravity = true;
-        missileLeft.GetComponent<Rigidbody>().AddForce(Vector3.left * missileSpeed, ForceMode.VelocityChange);
-        missileLeft.GetComponent<Rigidbody>().AddForce(Vector3.down * 250, ForceMode.Acceleration);
-        missileLeft.GetComponent<Rigidbody>().detectCollisions = true;
-        missileLeft.transform.Find("MissileExhaust").gameObject.SetActive(true);   // Enable exhaust effect
-
-        missileRight.transform.parent = null;
-        missileRight.GetComponent<Rigidbody>().useGravity = true;
-        missileRight.GetComponent<Rigidbody>().AddForce(Vector3.left * missileSpeed, ForceMode.VelocityChange);
-        missileRight.GetComponent<Rigidbody>().AddForce(Vector3.down * 250, ForceMode.Acceleration);
-        missileRight.GetComponent<Rigidbody>().detectCollisions = true;
-        missileRight.transform.Find("MissileExhaust").gameObject.SetActive(true);
+        foreach (GameObject missile in missiles) {
+            missile.transform.parent = null;
+            missile.GetComponent<Rigidbody>().useGravity = true;
+            missile.GetComponent<Rigidbody>().AddForce(Vector3.down * 250, ForceMode.Acceleration);
+            missile.GetComponent<Rigidbody>().detectCollisions = true;
+            missile.transform.Find("MissileExhaust").gameObject.SetActive(true);   // Enable exhaust effect
+            if (isHeadingRight)
+                missile.GetComponent<Rigidbody>().AddForce(Vector3.right * missileSpeed, ForceMode.VelocityChange);
+            else
+                missile.GetComponent<Rigidbody>().AddForce(Vector3.left * missileSpeed, ForceMode.VelocityChange);
+        }
 
         GetComponents<AudioSource>()[FIRE_SOUND_OFFSET].Play();
         Retreat();
@@ -225,11 +255,18 @@ Debug.Log("Starting retreat.");
             isSwooping = false;
             psMainLeftExhaust.startSizeMultiplier = 5;      // Intensify jets
             psMainRightExhaust.startSizeMultiplier = 5;
-            if (!chopperMoving) speed = DEFAULT_SPEED;
+            if (!chopperMoving) {
+                if (isHeadingRight) speed = DEFAULT_SPEED;
+                else speed = -DEFAULT_SPEED;
+                Debug.Log("Chopper not moving. Initial retreat speed = " + speed);
+            }
         }
 
         retreatTime += Time.deltaTime;
-        speed += retreatTime * RETREAT_SPEED_FACTOR;
+        if (isHeadingRight)
+            speed += retreatTime * RETREAT_SPEED_FACTOR;
+        else
+            speed -= retreatTime * RETREAT_SPEED_FACTOR;
 
         // Increase pitch of engine as we retreat. If we were using forces to move jet, Doppler Level would do this
         engineSound.pitch += retreatTime * RETREAT_PITCH_FACTOR;

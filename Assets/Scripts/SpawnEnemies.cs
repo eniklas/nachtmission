@@ -22,13 +22,14 @@ public class SpawnEnemies : MonoBehaviour {
     private const int TANK_SPAWN_DISTANCE_MAX = 150;    // Max distance from chopper to spawn a tank
     private const float TANK_SPAWN_POS_Y = 6.3f;        // Y position to place tanks
     private const int TANK_SPAWN_POS_Z = -5;            // Z position to place tanks
-    private const int JET_SPAWN_DISTANCE_X = 100;       // How far to the left of chopper to spawn jets
+    private const int JET_SPAWN_DISTANCE_X = 100;       // How far left/right of chopper to spawn jets
     private const int JET_SPAWN_DISTANCE_Y = 15;        // How high above chopper to spawn jets
     private const int JET_SPAWN_POS_Z = 10;             // Z position to place jets
-    private const int DRONE_SPAWN_DISTANCE_X = 100;     // How far to the left of chopper to spawn drones
+    private const int DRONE_SPAWN_DISTANCE_X = 100;     // How far left/right of chopper to spawn drones
     private const int DRONE_SPAWN_POS_Z = 0;            // Z position to place drones
     private const int MAX_TANKS = 4;                    // Maximum number of tanks that can exist at once
     private const int MAX_DRONES = 1;                   // Maximum number of drones that can exist at once
+    public  float chopperStillMaxSpeed = 10.0f;         // Max speed at which chopper is considered to be still
     private GameObject chopper;
     public  GameObject tank;
     public  GameObject jet;
@@ -87,18 +88,31 @@ public class SpawnEnemies : MonoBehaviour {
     void SpawnJet() {
         // Only spawn a jet if the chopper is in enemy territory; spawn just off the screen to the left
         if (chopper.transform.position.x < rightBoundary) {
-            GameObject.Instantiate(jet,
-                new Vector3(chopper.transform.position.x - JET_SPAWN_DISTANCE_X,
-                            chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
-                            JET_SPAWN_POS_Z),
-                            Quaternion.identity);
+            if (chopper.GetComponent<ControlChopper>().hSpeed > chopperStillMaxSpeed &&
+                rightBoundary - chopper.transform.position.x > JET_SPAWN_DISTANCE_X) {
+                    GameObject.Instantiate(jet,
+                        new Vector3(chopper.transform.position.x + JET_SPAWN_DISTANCE_X,
+                                    chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
+                                    JET_SPAWN_POS_Z),
+                                    Quaternion.identity);
+                Debug.Log("Spawning jet to the right.");
+            }
+            else {
+                GameObject.Instantiate(jet,
+                    new Vector3(chopper.transform.position.x - JET_SPAWN_DISTANCE_X,
+                                chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
+                                JET_SPAWN_POS_Z),
+                                Quaternion.identity);
+                Debug.Log("Spawning jet to the left.");
+            }
         }
     }
 
     void SpawnDrone() {
         if (GameObject.FindGameObjectsWithTag("drone").Length < MAX_DRONES) {
-            // Don't want to spawn in view; randomly choose whether to spawn to the left or right
-            if (Random.Range(0, 2) == 0) {   // Spawn to the left
+            // Don't want to spawn in view; randomly choose whether to spawn to the left
+            //  or right, but force left if the chopper is too close to the river
+            if (Random.Range(0, 2) == 0 || rightBoundary - chopper.transform.position.x < DRONE_SPAWN_DISTANCE_X) {
                 GameObject.Instantiate(drone,
                     new Vector3(Random.Range(leftBoundary - DRONE_SPAWN_DISTANCE_X,
                                     chopper.transform.position.x - DRONE_SPAWN_DISTANCE_X),
@@ -109,7 +123,7 @@ public class SpawnEnemies : MonoBehaviour {
             }
 
             // Spawn to the right as long as it's not past the river
-            else if (rightBoundary - chopper.transform.position.x > DRONE_SPAWN_DISTANCE_X) {
+            else {
                 GameObject.Instantiate(drone,
                 new Vector3(Random.Range(chopper.transform.position.x + DRONE_SPAWN_DISTANCE_X, rightBoundary),
                             Random.Range(ground, ceiling),
