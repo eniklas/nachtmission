@@ -225,7 +225,12 @@ public class ManageUI : MonoBehaviour {
         UpdateScore();
 
         if (numChoppersLeft == 0) GameOver();
-        else chopper.GetComponent<ControlChopper>().initChopper();
+        else {
+            chopper.GetComponent<ControlChopper>().initChopper();
+            // Destroy any bullets fired by chopper to avoid seeing them pass by on the next life
+            foreach (GameObject bullet in GameObject.FindGameObjectsWithTag("source:chopper"))
+                Destroy(bullet);
+        }
     }
 
     void GameOver() {
@@ -246,13 +251,13 @@ public class ManageUI : MonoBehaviour {
     public void UpdateScore() {
         prisonersCaptive = prisonersTotal - prisonersOnboard - prisonersRescued - prisonersKilled;
         scoreText.GetComponent<Text>().text = ("Lives: " + numChoppersLeft +
-                                             "   Captive: " + prisonersCaptive +
-                                             "   On board: " + prisonersOnboard +
-                                             "   Rescued: " + prisonersRescued +
-                                             "   Killed: " + prisonersKilled);
+                                               "\nCaptive: " + prisonersCaptive +
+                                               "\nOn board: " + prisonersOnboard +
+                                               "\nRescued: " + prisonersRescued +
+                                               "\nKilled: " + prisonersKilled);
 
-        // FIXME: when using 6 prisons with 5 prisoners each, I ended up with -2 captive somehow; check that you're
-        //  using fixedupdate for prisoner collisions
+        // FIXME: when using 6 prisons with 5 prisoners each, I ended up with -2 captive somehow
+        //  I've also seen lives = -1 on game over once
         if (prisonersRescued + prisonersKilled == prisonersTotal) GameOver();
 
         // Spawn additional enemies later in the game

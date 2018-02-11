@@ -22,7 +22,7 @@ public class ControlTurret : MonoBehaviour {
     private const float RELOAD_TIME = 2.0f;             // How often tank can fire
     private float timeSinceLastFire = 0.0f;             // Time since tank last fired
     private bool canFire = true;                        // True if the tank is ready to fire
-    private const float bulletSpeed = 2.0f;
+    private const float bulletSpeed = 3.0f;
     public GameObject bullet;
     private GameObject bulletClone;
 
