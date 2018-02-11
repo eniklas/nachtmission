@@ -32,7 +32,6 @@ public class ManageUI : MonoBehaviour {
     private GameObject   creditsText;
     private GameObject   versionText;
     private GameObject   chopper;
-    private GameObject   rotor;
     private SpawnEnemies enemyScript;
     private bool         gameOver = false;
     private float        blinkFreq = 1.0f;              // How fast text blinks in secs
@@ -70,7 +69,6 @@ public class ManageUI : MonoBehaviour {
 
 	void Start () {
         chopper = GameObject.Find("Chopper");
-        rotor = GameObject.Find("ChopperRotor");
         enemyScript = GameObject.Find("Enemies").GetComponent<SpawnEnemies>();
 
         // Hack to determine if this is the first time through the game, or if user has clicked New Game; this is
@@ -131,11 +129,11 @@ public class ManageUI : MonoBehaviour {
     void Pause(bool pause) {
         if (pause) {
             Time.timeScale = 0.0f;
-            rotor.GetComponent<AudioSource>().Stop();
+            AudioListener.pause = true;
         }
         else {
             Time.timeScale = 1.0f;
-            rotor.GetComponent<AudioSource>().Play();
+            AudioListener.pause = false;
         }
     }
 
