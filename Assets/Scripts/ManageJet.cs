@@ -14,16 +14,13 @@ public class ManageJet : MonoBehaviour {
     private float       enemyTerritoryBoundary;         // X position dividing enemy and friendly territory
     private const float DEFAULT_SPEED = 25.0f;          // Default speed of jet
     private float       speed;                          // Current speed of jet
-    private float       missileSpeed = 50.0f;           // Speed of missiles when fired
+    private float       missileSpeed = 40.0f;           // Speed of missiles when fired
     private const int   ENGINE_SOUND_OFFSET = 0;        // Offset (in Inspector) for jet engine sound
     private const int   FIRE_SOUND_OFFSET = 1;          // Offset (in Inspector) for missile firing sound
-    private const float TIME_TO_ACCELERATE = 0.5f;      // How long it takes to match chopper's speed
-    private const float MAX_ACCELERATION = 1.33f;       // Max acceleration after TIME_TO_ACCELERATE has passed
-    private const float TIME_TO_ROLL = 1.0f;            // How long it takes to roll
     private float       finalRollAngle;                 // Z rotation at end of swoop
     private float       rollTime = 0.0f;                // How long jet has been rolling
     private float       roll;                           // Current roll angle
-    private const float TIME_TO_SWOOP = 1.0f;           // How long it takes to swoop
+    private const float TIME_TO_SWOOP = 1.2f;           // How long it takes to swoop
     private float       finalSwoopAngle;                // Final angle about Y after swooping
     private const float SWOOP_DROP_DISTANCE = 5.0f;     // Drop this far while swooping
     private const float SWOOP_CHOPPER_DISTANCE = 20.0f; // X distance past chopper to swoop
@@ -40,7 +37,9 @@ public class ManageJet : MonoBehaviour {
     private const float RETREAT_SPEED_FACTOR = 1.2f;    // Factor speed changes when retreating
     private const float RETREAT_PITCH_FACTOR = 0.02f;   // Pitch increase/sec when retreating
     private float       acceleration;                   // Current acceleration as jet speeds up to match chopper
-    private float       accelerationTime = 0.0f;        // Time jet has been acceleration to match chopper
+    private float       accelerationTime = 0.0f;        // Time jet has been accelerating to match chopper
+    private const float TIME_TO_ACCELERATE = 0.5f;      // How long it takes to match chopper's speed
+    private const float MAX_ACCELERATION = 1.2f;        // Max acceleration after TIME_TO_ACCELERATE has passed
     private float       retreatTime = 0.0f;             // Time jet has been retreating
     private bool        isHunting = true;
     private bool        isSwooping = false;
@@ -99,6 +98,13 @@ public class ManageJet : MonoBehaviour {
         finalZPos = chopper.transform.position.z;
 	}
 	
+	void FixedUpdate () {
+        if (isRetreating)
+            foreach (GameObject missile in missiles)
+                if (missile != null)
+                    missile.GetComponent<Rigidbody>().AddForce(Vector3.down * 20, ForceMode.Acceleration);
+    }
+
 	void Update () {
         if (Time.frameCount % 25 == 0) Debug.Log("Jet speed = " + speed);
         transform.position = new Vector3(GetXPos(), GetYPos(), GetZPos());
@@ -178,14 +184,14 @@ public class ManageJet : MonoBehaviour {
     void Roll() {
         rollTime += Time.deltaTime;
 
-        if (rollTime >= TIME_TO_ROLL)
+        if (rollTime >= TIME_TO_SWOOP)
             if (isHeadingRight)
                 transform.Rotate(Vector3.forward, 1.5f, Space.Self);
             else
                 // TODO: understand why -1.5f works
                 transform.Rotate(Vector3.forward, -1.5f, Space.Self);
         else {
-            roll = Time.deltaTime / TIME_TO_ROLL * (initialRoll - finalRollAngle);
+            roll = Time.deltaTime / TIME_TO_SWOOP * (initialRoll - finalRollAngle);
             transform.Rotate(Vector3.forward, roll, Space.Self);
         }
     }
@@ -229,13 +235,13 @@ public class ManageJet : MonoBehaviour {
     }
 
     void Attack() {
-        // Fire; detach missiles from jet, enable colliders and gravity, and add force
+        // Fire; detach missiles from jet, enable colliders and particle effects, and add force
         foreach (GameObject missile in missiles) {
             missile.transform.parent = null;
-            missile.GetComponent<Rigidbody>().useGravity = true;
-            missile.GetComponent<Rigidbody>().AddForce(Vector3.down * 250, ForceMode.Acceleration);
             missile.GetComponent<Rigidbody>().detectCollisions = true;
             missile.transform.Find("MissileExhaust").gameObject.SetActive(true);   // Enable exhaust effect
+
+            // Add horizontal force; downward acceleration is done in FixedUpdate()
             if (isHeadingRight)
                 missile.GetComponent<Rigidbody>().AddForce(Vector3.right * missileSpeed, ForceMode.VelocityChange);
             else
@@ -273,7 +279,9 @@ Debug.Log("Starting retreat.");
 
         // Note that this will be true if the Scene camera can see it, so the jet may stay around longer in dev
         if (Mathf.Abs(transform.position.x - chopper.transform.position.x) > 100 && !GetComponent<Renderer>().isVisible)
-            Destroy(gameObject, 1);
+            // Don't destroy the jet too early, otherwise the missiles may
+            //  slow down before impact because the script has exited
+            Destroy(gameObject, 3);
     }
 
     void OnCollisionEnter(Collision col) {
