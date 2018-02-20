@@ -33,6 +33,7 @@ public class ManageUI : MonoBehaviour {
     private GameObject   versionText;
     private GameObject   chopper;
     private SpawnEnemies enemyScript;
+    private ManageCamera cameraScript;
     private bool         gameOver = false;
     private float        blinkFreq = 1.0f;              // How fast text blinks in secs
     private float        timeSinceBlink = 0.0f;
@@ -45,7 +46,7 @@ public class ManageUI : MonoBehaviour {
     private bool         dronesActive = false;
     private bool         isShowingMenu = true;          // True if the game is paused/showing menu
     private bool         isShowingHowToPlay = false;    // True if we're displaying the How to Play text
-    private bool         firstGameLaunch = true;        // False if the user has clicked New Game
+    public  bool         firstGameLaunch = true;        // False if the user has clicked New Game
     private GameObject   resumeGameButton;
     private GameObject   menu;
     private GameObject   terrain;
@@ -69,6 +70,7 @@ public class ManageUI : MonoBehaviour {
 
 	void Start () {
         chopper = GameObject.Find("Chopper");
+        cameraScript = GameObject.Find("Main Camera").GetComponent<ManageCamera>();
         enemyScript = GameObject.Find("Enemies").GetComponent<SpawnEnemies>();
 
         // Hack to determine if this is the first time through the game, or if user has clicked New Game; this is
@@ -78,9 +80,15 @@ public class ManageUI : MonoBehaviour {
         if (terrains.Length > 1) {
             Destroy(terrains[1]);
             firstGameLaunch = false;
+            // Only show title on first launch
+            GameObject.Find("Title").SetActive(false);
             MenuToggle();
         }
-        else Pause(true);
+        else {
+            Pause(true);
+            cameraScript.titleZoomIn = false;
+            cameraScript.ZoomTitle();
+        }
 
         terrain = GameObject.Find("Terrain");
         DontDestroyOnLoad(terrain);
@@ -144,7 +152,8 @@ public class ManageUI : MonoBehaviour {
             versionText.SetActive(true);
 
             // Show resume game button if game is in progress
-            if (gameOver || firstGameLaunch) resumeGameButton.SetActive(false);
+            if (gameOver || firstGameLaunch)
+                resumeGameButton.SetActive(false);
             else resumeGameButton.SetActive(true);
         }
 
@@ -153,7 +162,12 @@ public class ManageUI : MonoBehaviour {
             timeSinceMenuClear = 0.0f;
             menu.SetActive(false);
             versionText.SetActive(false);
-            if (firstGameLaunch) firstGameLaunch = false;   // Needed in case user starts first game with Start button
+            // Needed in case user starts first game with Start button
+            if (firstGameLaunch) {
+                firstGameLaunch = false;
+                cameraScript.titleZoomIn = true;
+                cameraScript.ZoomTitle();
+            }
         }
 
         isShowingMenu = !isShowingMenu;
