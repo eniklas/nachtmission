@@ -14,7 +14,7 @@ using UnityEngine.UI;
 
 public class ManageUI : MonoBehaviour {
     private const int    NUM_CHOPPERS = 3;              // Total lives
-    private const float  CREDITS_SCROLL_SPEED = 800000; // Speed that credits scroll up the screen
+    private const float  CREDITS_SCROLL_SPEED = 80;     // Speed that credits scroll up the screen
     private const float  CREDITS_EXIT_FACTOR = 1.6f;    // Stop credits when they reach this factor of screen height
     private Vector3      creditsStartPosition;          // Position of the credits (bottom of screen)
     private bool         isScrollingCredits = false;    // True if the credits are being shown
@@ -189,14 +189,11 @@ public class ManageUI : MonoBehaviour {
             menu.SetActive(false);
             scoreText.SetActive(false);     // Could get in the way on lower resolutions
             creditsText.SetActive(true);
-            // Since the game is paused, we can't scroll at a consistent rate because timeScale
-            //  is zero. So, set a very low timeScale and use a high scrolling speed
-            Time.timeScale = 0.0001f;
             creditsText.GetComponent<RectTransform>().transform.position = creditsStartPosition;
         }
 
         else {
-            creditsText.transform.Translate(Vector3.up * CREDITS_SCROLL_SPEED * Time.deltaTime);
+            creditsText.transform.Translate(Vector3.up * CREDITS_SCROLL_SPEED * Time.unscaledDeltaTime);
             if (creditsText.transform.position.y > Screen.height * CREDITS_EXIT_FACTOR) ReturnToMenuFromTextScreen();
         }
     }
