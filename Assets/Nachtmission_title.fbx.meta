@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: 72e42da18479e4248860a855a8201654
-timeCreated: 1519066118
+guid: 383744463d5fbdc409c9043a1e8e23f9
+timeCreated: 1519152350
 licenseType: Free
 ModelImporter:
   serializedVersion: 22
@@ -31,8 +31,7 @@ ModelImporter:
     400020: s1
     400022: s2
     400024: t
-    2100000: Material
-    2100002: No Name
+    2100000: No Name
     2300000: a
     2300002: c
     2300004: h

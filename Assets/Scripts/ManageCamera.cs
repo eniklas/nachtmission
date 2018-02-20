@@ -25,14 +25,12 @@ public class ManageCamera : MonoBehaviour {
     private float pullbackMultiplier = 2.0f;
 
     private GameObject  title;                         // 3D model of title
-    private const float TITLE_Z_OFFSET_UNZOOMED = 40;  // Z offset from camera of title when unzoomed (showing)
+    private const float TITLE_Z_OFFSET_UNZOOMED = 20;  // Z offset from camera of title when unzoomed (showing)
     private const float TITLE_Z_OFFSET_ZOOMED = -5;    // Z offset from camera of title when zoomed (hidden)
-    private const float TITLE_ZOOM_DURATION = 0.5f;    // How long it takes for title to zoom in/out
+    private const float TITLE_ZOOM_DURATION = 1.0f;    // How long it takes for title to zoom in/out
     private float       titleZoomTime;                 // How long the title has been zooming
     public  bool        titleZoomIn;                   // True if title should zoom in, false if it should zoom out
     public  bool        titleIsZooming = false;        // True if title is zoomed, false if unzoomed
-    private Vector3     titleInitialPosition;          // Initial position of title (behind camera)
-    private Vector3     titleFinalPosition;            // Final position of title (in front of camera)
 
     void Awake() {
         chopper = GameObject.Find("Chopper");
@@ -47,18 +45,11 @@ public class ManageCamera : MonoBehaviour {
 
         // Put title just above the menu
         title = transform.Find("Title").gameObject;
-        titleInitialPosition = new Vector3(transform.position.x,
-                                         transform.position.y + (chopperMaxHeight / 6),
-                                         transform.position.z + TITLE_Z_OFFSET_ZOOMED);
-        titleFinalPosition = new Vector3(transform.position.x,
-                                         transform.position.y + (chopperMaxHeight / 6),
-                                         transform.position.z + TITLE_Z_OFFSET_UNZOOMED);
-        title.transform.position = titleInitialPosition;
+        title.transform.position = new Vector3(transform.position.x,
+                                               transform.position.y + (chopperMaxHeight / 6),
+                                               transform.position.z + TITLE_Z_OFFSET_ZOOMED);
     }
 
-	void Start () {
-	}
-	
 	void Update () {
         // Keep camera pointed at chopper
         transform.position = new Vector3(chopper.transform.position.x, GetYPos(), GetZPos());
@@ -92,6 +83,9 @@ public class ManageCamera : MonoBehaviour {
                 title.SetActive(true);
         }
 
+        // In the editor, with a low TITLE_ZOOM_DURATION, this is needed for zoom out to work
+        if (Application.isEditor && Time.frameCount < 50) return;
+
         // Game may be paused, so use unscaled time
         titleZoomTime += Time.unscaledDeltaTime;
 
@@ -109,17 +103,10 @@ public class ManageCamera : MonoBehaviour {
         else {
             titleIsZooming = false;
 
-            // Once title has zoomed out of view, disable it and unpause game
+            // Once title has zoomed out of view, disable it and the spotlight
             if (titleZoomIn) {
                 title.SetActive(false);
-            }
-            else {
-                title.transform.position = titleFinalPosition;
-/*
-                title.transform.position = new Vector3(transform.position.x,
-                                                       transform.position.y + (chopperMaxHeight / 6),
-                                                       transform.position.z + TITLE_Z_OFFSET_UNZOOMED);
-*/
+                GameObject.Find("Spotlight").SetActive(false);
             }
         }
     }
