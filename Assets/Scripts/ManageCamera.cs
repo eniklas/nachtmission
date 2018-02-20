@@ -25,6 +25,7 @@ public class ManageCamera : MonoBehaviour {
     private float pullbackMultiplier = 2.0f;
 
     private GameObject  title;                         // 3D model of title
+    private const float GAME_START_WAIT_TIME = 4.0f;   // How long to wait after game launch before zooming title
     private const float TITLE_Z_OFFSET_UNZOOMED = 20;  // Z offset from camera of title when unzoomed (showing)
     private const float TITLE_Z_OFFSET_ZOOMED = -5;    // Z offset from camera of title when zoomed (hidden)
     private const float TITLE_ZOOM_DURATION = 1.0f;    // How long it takes for title to zoom in/out
@@ -83,8 +84,9 @@ public class ManageCamera : MonoBehaviour {
                 title.SetActive(true);
         }
 
-        // In the editor, with a low TITLE_ZOOM_DURATION, this is needed for zoom out to work
-        if (Application.isEditor && Time.frameCount < 50) return;
+        // The Unity splash screen seems to cause the zoom to not work
+        //  if done immediately at launch, so wait a few seconds
+        if (Time.unscaledTime < GAME_START_WAIT_TIME) return;
 
         // Game may be paused, so use unscaled time
         titleZoomTime += Time.unscaledDeltaTime;
