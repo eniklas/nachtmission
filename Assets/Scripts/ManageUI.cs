@@ -120,6 +120,7 @@ public class ManageUI : MonoBehaviour {
         }
     }
 
+    // FIXME: use timeSinceMenuClear to avoid detecting button again immediately after selecting How to Play or Credits
     public void HowToPlayButton() {
         isShowingHowToPlay = true;
         menu.SetActive(false);
