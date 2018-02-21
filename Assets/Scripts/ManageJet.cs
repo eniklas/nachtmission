@@ -101,7 +101,7 @@ public class ManageJet : MonoBehaviour {
 	void FixedUpdate () {
         if (isRetreating)
             foreach (GameObject missile in missiles)
-                if (missile != null)
+                if (missile != null && missile.transform.parent == null)
                     missile.GetComponent<Rigidbody>().AddForce(Vector3.down * 20, ForceMode.Acceleration);
     }
 
