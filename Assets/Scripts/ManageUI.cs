@@ -120,11 +120,11 @@ public class ManageUI : MonoBehaviour {
         }
     }
 
-    // FIXME: use timeSinceMenuClear to avoid detecting button again immediately after selecting How to Play or Credits
     public void HowToPlayButton() {
         isShowingHowToPlay = true;
         menu.SetActive(false);
         howToPlayText.SetActive(true);
+        timeSinceMenuClear = 0.0f;
     }
 
     public void CreditsButton() {
@@ -191,6 +191,7 @@ public class ManageUI : MonoBehaviour {
             scoreText.SetActive(false);     // Could get in the way on lower resolutions
             creditsText.SetActive(true);
             creditsText.GetComponent<RectTransform>().transform.position = creditsStartPosition;
+            timeSinceMenuClear = 0.0f;
         }
 
         else {
@@ -201,7 +202,7 @@ public class ManageUI : MonoBehaviour {
 
     void Update() {
         if (isShowingHowToPlay || isScrollingCredits) {
-            if (Input.anyKeyDown) ReturnToMenuFromTextScreen();
+            if (Input.anyKeyDown && timeSinceMenuClear > 0.2f) ReturnToMenuFromTextScreen();
             else if (isScrollingCredits) ScrollCredits();
         }
 
@@ -220,7 +221,7 @@ public class ManageUI : MonoBehaviour {
             }
         }
 
-        timeSinceMenuClear += Time.deltaTime;
+        timeSinceMenuClear += Time.unscaledDeltaTime;
     }
 
     // This is called by ControlChopper when a chopper crash is complete
