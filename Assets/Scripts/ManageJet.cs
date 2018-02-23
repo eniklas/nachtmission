@@ -102,13 +102,6 @@ public class ManageJet : MonoBehaviour {
         initialPitch = transform.eulerAngles.y;
         finalZPos = chopper.transform.position.z;
 	}
-	
-	void FixedUpdate () {
-        if (isRetreating)
-            foreach (GameObject missile in missiles)
-                if (missile != null && missile.transform.parent == null)
-                    missile.GetComponent<Rigidbody>().AddForce(Vector3.down * 20, ForceMode.Acceleration);
-    }
 
 	void Update () {
         if (Time.frameCount % 25 == 0) Debug.Log("Jet speed = " + speed);
@@ -208,7 +201,6 @@ public class ManageJet : MonoBehaviour {
             isSwooping = true;
             // Match chopper speed if it's moving
             if (chopperMoving) {
-//                speed = 1.5f * chopper.GetComponent<ManageChopper>().hSpeed;
                 speed = 1.5f * chopperRbody.velocity.x;
                 Debug.Log("Starting swoop. Matching chopper speed at " + speed);
             }
@@ -241,14 +233,13 @@ public class ManageJet : MonoBehaviour {
     }
 
     void Attack() {
-        // FIXME: missiles stop falling if jet is destroyed
         // Fire; detach missiles from jet, enable colliders and particle effects, and add force
         foreach (GameObject missile in missiles) {
             missile.transform.parent = null;
             missile.GetComponent<Rigidbody>().detectCollisions = true;
             missile.transform.Find("MissileExhaust").gameObject.SetActive(true);   // Enable exhaust effect
 
-            // Add horizontal force; downward acceleration is done in FixedUpdate()
+            // Add horizontal force; downward acceleration is done in ManageBullet
             if (isHeadingRight)
                 missile.GetComponent<Rigidbody>().AddForce(Vector3.right * missileSpeed, ForceMode.VelocityChange);
             else

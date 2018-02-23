@@ -43,6 +43,12 @@ public class ManageBullet : MonoBehaviour {
         Destroy(soundsClone, soundsClone.GetComponents<AudioSource>()[offset].clip.length);
     }
 
+	void FixedUpdate () {
+        // Missiles accelerate downwards once launched
+        if (tag == "missile" && transform.parent == null)
+            GetComponent<Rigidbody>().AddForce(Vector3.down * 20, ForceMode.Acceleration);
+    }
+
     void OnCollisionEnter(Collision col) {
         if (col.gameObject.tag == "tank" && gameObject.tag != "source:tank") {
             PlaySound(SOUND_TANK_EXPLOSION);
