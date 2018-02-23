@@ -10,20 +10,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// TODO: add camera shake (see perlin noise)
+// TODO: write method that plays explosion effects and destroys them after 1 play
 public class ManageBullet : MonoBehaviour {
-    public GameObject explosion;                // Small explosion used when bullet hits ground/non-targetable object
-    public GameObject bigExplosion;             // Big explosion used when a major object is hit
+    public GameObject explosion;                    // Small explosion used when bullet hits ground
+    public GameObject bigExplosion;                 // Big explosion used when a major object is hit
     public GameObject smoke;
     public GameObject fire;
     public GameObject sounds;
     private GameObject smokeClone;
     private GameObject fireClone;
     private GameObject soundsClone;
-    public GameObject PrisonDamaged;            // Prefab of prison that has been hit
+    public GameObject PrisonDamaged;                // Prefab of prison that has been hit
     private GameObject chopper;
     private ManageUI uiScript;
-    private ParticleSystem.MainModule psMain;   // Used to modify smoke
+    private ParticleSystem.MainModule psMain;       // Used to modify smoke
     private const int SOUND_GROUND_EXPLOSION = 0;   // Offset in the Sounds prefab
     private const int SOUND_TANK_EXPLOSION = 1;
     private const int SOUND_JET_EXPLOSION = 5;
@@ -107,10 +107,6 @@ public class ManageBullet : MonoBehaviour {
         // If we hit a non-targetable object like the ground, just explode where it hit
         else {
             PlaySound(SOUND_GROUND_EXPLOSION);
-
-            GameObject soundsClone = GameObject.Instantiate(sounds, transform.position, Quaternion.identity);
-            soundsClone.GetComponents<AudioSource>()[SOUND_GROUND_EXPLOSION].Play();
-            Destroy(soundsClone, 5);
 
             GameObject expClone = GameObject.Instantiate(explosion, transform.position, Quaternion.identity);
             // FIXME: this causes the bullet to flicker on when explosion is destroyed
