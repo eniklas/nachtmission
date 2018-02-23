@@ -25,11 +25,11 @@ public class ManageCamera : MonoBehaviour {
     private float pullbackMultiplier = 2.0f;
 
     private GameObject  title;                         // 3D model of title
-    private const float GAME_START_WAIT_TIME = 4.0f;   // How long to wait after game launch before zooming title
+    private const float TITLE_ZOOM_WAIT_TIME = 4.0f;   // How long to wait after game launch before zooming title
     private const float TITLE_Z_OFFSET_UNZOOMED = 20;  // Z offset from camera of title when unzoomed (showing)
     private const float TITLE_Z_OFFSET_ZOOMED = -5;    // Z offset from camera of title when zoomed (hidden)
-    private const float TITLE_ZOOM_DURATION = 1.0f;    // How long it takes for title to zoom in/out
-    private float       titleZoomTime;                 // How long the title has been zooming
+    public  float       titleZoomDuration = 1.0f;      // How long it takes for title to zoom in/out
+    public  float       titleZoomTime;                 // How long the title has been zooming
     public  bool        titleZoomIn;                   // True if title should zoom in, false if it should zoom out
     public  bool        titleIsZooming = false;        // True if title is zoomed, false if unzoomed
 
@@ -90,20 +90,20 @@ public class ManageCamera : MonoBehaviour {
 
         // The Unity splash screen seems to cause the zoom to not work
         //  if done immediately at launch, so wait a few seconds
-        if (Time.unscaledTime < GAME_START_WAIT_TIME) return;
+        if (Time.unscaledTime < TITLE_ZOOM_WAIT_TIME) return;
 
         // Game may be paused, so use unscaled time
         titleZoomTime += Time.unscaledDeltaTime;
 
-        if (titleZoomTime < TITLE_ZOOM_DURATION) {
+        if (titleZoomTime < titleZoomDuration) {
             if (titleZoomIn) {
                 title.transform.Translate(Vector3.forward * (TITLE_Z_OFFSET_UNZOOMED - TITLE_Z_OFFSET_ZOOMED)
-                    * (Time.unscaledDeltaTime / TITLE_ZOOM_DURATION));
+                    * (Time.unscaledDeltaTime / titleZoomDuration));
             }
 
             else {
                 title.transform.Translate(Vector3.back * (TITLE_Z_OFFSET_UNZOOMED - TITLE_Z_OFFSET_ZOOMED)
-                    * (Time.unscaledDeltaTime / TITLE_ZOOM_DURATION));
+                    * (Time.unscaledDeltaTime / titleZoomDuration));
             }
         }
         else {

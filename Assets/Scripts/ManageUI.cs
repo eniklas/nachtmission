@@ -163,9 +163,15 @@ public class ManageUI : MonoBehaviour {
             timeSinceMenuClear = 0.0f;
             menu.SetActive(false);
             versionText.SetActive(false);
-            // Needed in case user starts first game with Start button
+
             if (firstGameLaunch) {
+                // Needed in case user starts first game with Start button
                 firstGameLaunch = false;
+
+                // Smoothly reverse title zoom if player starts before zoom out is done
+                if (cameraScript.titleZoomTime > 0 && cameraScript.titleZoomTime < cameraScript.titleZoomDuration)
+                    cameraScript.titleZoomTime = cameraScript.titleZoomDuration - cameraScript.titleZoomTime;
+
                 cameraScript.titleZoomIn = true;
                 cameraScript.ZoomTitle();
             }
