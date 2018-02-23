@@ -10,7 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ControlTurret : MonoBehaviour {
+public class ManageTurret : MonoBehaviour {
     private GameObject chopper;
     private GameObject turretMuzzle;
     private GameObject turretMuzzleTail;

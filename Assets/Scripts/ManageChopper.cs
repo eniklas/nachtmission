@@ -359,7 +359,7 @@ public class ManageChopper : MonoBehaviour {
 
             // Stop tanks from firing and moving
             foreach (GameObject turret in GameObject.FindGameObjectsWithTag("turret"))
-                turret.GetComponent<ControlTurret>().enabled = false;
+                turret.GetComponent<ManageTurret>().enabled = false;
 
             foreach (GameObject tank in GameObject.FindGameObjectsWithTag("tank"))
                 tank.GetComponent<ManageTank>().enabled = false;
@@ -413,7 +413,7 @@ public class ManageChopper : MonoBehaviour {
 
                 // Crash scene is done; set tanks back to active
                 foreach (GameObject turret in GameObject.FindGameObjectsWithTag("turret"))
-                    turret.GetComponent<ControlTurret>().enabled = true;
+                    turret.GetComponent<ManageTurret>().enabled = true;
 
                 foreach (GameObject tank in GameObject.FindGameObjectsWithTag("tank"))
                     tank.GetComponent<ManageTank>().enabled = true;

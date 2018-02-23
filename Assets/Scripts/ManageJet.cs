@@ -78,7 +78,7 @@ public class ManageJet : MonoBehaviour {
 		chopperRbody = chopper.GetComponent<Rigidbody>();
         chopperScript = chopper.GetComponent<ManageChopper>();
         enemyTerritoryBoundary = GameObject.Find("LeftRiverBoundary").transform.position.x;
-        chopperStillMaxSpeed = GameObject.Find("Enemies").GetComponent<SpawnEnemies>().chopperStillMaxSpeed;
+        chopperStillMaxSpeed = GameObject.Find("Enemies").GetComponent<ManageEnemies>().chopperStillMaxSpeed;
 
         // Orient the jet depending on whether it was spawned to the left or right of chopper
         if (transform.position.x > chopper.transform.position.x) {

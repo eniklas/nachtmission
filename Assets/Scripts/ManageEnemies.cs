@@ -10,7 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpawnEnemies : MonoBehaviour {
+public class ManageEnemies : MonoBehaviour {
     private float rightBoundary;                        // X position of right boundary (river)
     private float leftBoundary;                         // X position of left boundary
     private float ceiling;                              // Y position of top boundary

@@ -32,7 +32,7 @@ public class ManageUI : MonoBehaviour {
     private GameObject   creditsText;
     private GameObject   versionText;
     private GameObject   chopper;
-    private SpawnEnemies enemyScript;
+    private ManageEnemies enemyScript;
     private ManageCamera cameraScript;
     private bool         gameOver = false;
     private float        blinkFreq = 1.0f;              // How fast text blinks in secs
@@ -71,7 +71,7 @@ public class ManageUI : MonoBehaviour {
 	void Start () {
         chopper = GameObject.Find("Chopper");
         cameraScript = GameObject.Find("Main Camera").GetComponent<ManageCamera>();
-        enemyScript = GameObject.Find("Enemies").GetComponent<SpawnEnemies>();
+        enemyScript = GameObject.Find("Enemies").GetComponent<ManageEnemies>();
 
         // Hack to determine if this is the first time through the game, or if user has clicked New Game; this is
         //  necessary because we want to show the menu at game launch, but not after clicking New Game
