@@ -39,6 +39,7 @@ public class ManagePrisoner : MonoBehaviour {
     private Vector3 boxSizeLeftRight;               // Box collider dimensions when facing left or right
     public Animator anim;
     public int numChopperColliders = 0;             // Number of chopper box colliders we're colliding with
+    private ManageChopper chopperScript;
 
     void Awake() {
         anim = GetComponent<Animator>();
@@ -50,6 +51,7 @@ public class ManagePrisoner : MonoBehaviour {
 
     void Start() {
         chopper = GameObject.Find("Chopper");
+        chopperScript = chopper.GetComponent<ManageChopper>();
         Base = GameObject.Find("Base");
         rightBoundary = GameObject.Find("LeftRiverBoundary").transform.position.x;
         leftBoundary = GameObject.Find("LeftBoundary").transform.position.x;
@@ -62,11 +64,10 @@ public class ManagePrisoner : MonoBehaviour {
 	void Update () {
         if (!isRescued) {
             // If chopper has landed in enemy territory and has room, run towards it
-            if (!chopper.GetComponent<ControlChopper>().isCrashing &&
-                chopper.GetComponent<ControlChopper>().isOnGround &&
+            if (!chopperScript.isCrashing &&
+                chopperScript.isOnGround &&
                 chopper.transform.position.x < rightBoundary &&
-                score.GetComponent<ManageUI>().prisonersOnboard <
-                chopper.GetComponent<ControlChopper>().capacity) {
+                score.GetComponent<ManageUI>().prisonersOnboard < chopperScript.capacity) {
                     if (chopper.transform.position.x < transform.position.x && direction != dir.left)
                         SetDirection(dir.left);
                     else if (chopper.transform.position.x > transform.position.x && direction != dir.right)

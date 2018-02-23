@@ -27,5 +27,5 @@ This project is licensed under the MPL 2 License - see the [LICENSE](LICENSE) fi
 
 * Unity team
 * Blender Foundation
-* Patrick Felicia (http://learntocreategames.com)
-* Andrew Price (http://blenderguru.com)
+* Patrick Felicia (https://learntocreategames.com)
+* Andrew Price (https://blenderguru.com)

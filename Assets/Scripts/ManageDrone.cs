@@ -150,7 +150,7 @@ public class ManageDrone : MonoBehaviour {
             GameObject expClone = GameObject.Instantiate(explosion, col.gameObject.transform.position,
                 Quaternion.identity);
             Destroy(expClone, 3);   // Explosion lasts 3 secs
-            col.gameObject.GetComponent<ControlChopper>().Crash();
+            col.gameObject.GetComponent<ManageChopper>().Crash();
             Destroy(gameObject);
         }
 

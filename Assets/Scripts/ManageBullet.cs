@@ -80,7 +80,7 @@ public class ManageBullet : MonoBehaviour {
             GameObject expClone =
                 GameObject.Instantiate(bigExplosion, col.gameObject.transform.position, Quaternion.identity);
             Destroy(expClone, 3);
-            col.gameObject.GetComponent<ControlChopper>().Crash();
+            col.gameObject.GetComponent<ManageChopper>().Crash();
         }
 
         else if (col.gameObject.tag == "prison") {
@@ -130,7 +130,7 @@ public class ManageBullet : MonoBehaviour {
         if (col.gameObject.tag == "prisoner" && !col.gameObject.GetComponent<ManagePrisoner>().isRescued) {
             // We could play the prisoner scream directly with PlaySound(), but the chopper needs to
             //  do it for landing on prisoners, so might as well use the same method
-            chopper.GetComponent<ControlChopper>().PrisonerScream();
+            chopper.GetComponent<ManageChopper>().PrisonerScream();
 
             GameObject expClone = GameObject.Instantiate(explosion,
                 col.gameObject.transform.position + new Vector3(0, 1, 0), Quaternion.identity);

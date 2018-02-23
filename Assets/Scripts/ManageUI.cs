@@ -103,7 +103,7 @@ public class ManageUI : MonoBehaviour {
             howToPlayText.GetComponent<Text>().text.Replace("NUM_PRISONERS", prisonersPerPrison.ToString());
         howToPlayText.GetComponent<Text>().text =
             howToPlayText.GetComponent<Text>().text.Replace("CAPACITY",
-            chopper.GetComponent<ControlChopper>().capacity.ToString());
+            chopper.GetComponent<ManageChopper>().capacity.ToString());
 
         UpdateScore();
 	}
@@ -224,7 +224,7 @@ public class ManageUI : MonoBehaviour {
         timeSinceMenuClear += Time.unscaledDeltaTime;
     }
 
-    // This is called by ControlChopper when a chopper crash is complete
+    // This is called by ManageChopper when a chopper crash is complete
     public void chopperDestroyed() {
         numChoppersLeft--;
 
@@ -237,7 +237,7 @@ public class ManageUI : MonoBehaviour {
 
         if (numChoppersLeft == 0) GameOver();
         else {
-            chopper.GetComponent<ControlChopper>().initChopper();
+            chopper.GetComponent<ManageChopper>().initChopper();
             // Destroy any bullets fired by chopper to avoid seeing them pass by on the next life
             foreach (GameObject bullet in GameObject.FindGameObjectsWithTag("source:chopper"))
                 Destroy(bullet);
@@ -246,7 +246,7 @@ public class ManageUI : MonoBehaviour {
 
     void GameOver() {
         gameOver = true;
-        chopper.GetComponent<ControlChopper>().enabled = false;   // Disable chopper control
+        chopper.GetComponent<ManageChopper>().enabled = false;   // Disable chopper control
 
         if (prisonersRescued == prisonersTotal) {
             // Player rescued all prisoners without losing any choppers

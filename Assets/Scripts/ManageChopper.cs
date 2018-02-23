@@ -10,7 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ControlChopper : MonoBehaviour {
+public class ManageChopper : MonoBehaviour {
     private const float rotationSpeed = 0.1f;          // Seconds it takes to rotate
     private float       rotationTime = 0.0f;           // Time chopper has been rotating
     private float       rotation;
@@ -37,9 +37,10 @@ public class ControlChopper : MonoBehaviour {
 
     private const float MAX_HSPEED = 50.0f;            // Max horizontal speed of chopper
     private const float MAX_VSPEED = 25.0f;            // Max vertical speed of chopper
-    private const float H_ACCELERATION = 60.0f;        // Horizontal acceleration
-    private const float V_ACCELERATION = 40.0f;        // vertical acceleration
+    private const float H_ACCELERATION = 6000.0f;        // Horizontal acceleration
+    private const float V_ACCELERATION = 4000.0f;        // vertical acceleration
     private const float SPEED_CRASH_FACTOR = 0.8f;     // Percentage of horizontal speed that will cause a crash
+    private float       hVelocity;                     // Current horizontal velocity of the chopper
     public  float       minHeightAboveGround;
     private float       leftBoundary;                  // Left boundary of playfield
     private float       rightBoundary;                 // Right boundary of playfield
@@ -47,10 +48,13 @@ public class ControlChopper : MonoBehaviour {
     private float       rightRiverBoundary;            // Right edge of river
     private float       ceiling;                       // Max height chopper can fly
     private float       ground;                        // Min height chopper can fly
-    public  float       hSpeed;                        // Current horizontal speed (jet needs to read this)
-    private float       vSpeed;                        // Current vertical speed
+    private float       hAxis;                         // Horizontal axis input
+    private float       vAxis;                         // Vertical axis input
+    private Rigidbody   rbody;                         // Rigidbody component of chopper
+    private RigidbodyConstraints rbodyConstraints; // Rigidbody constraints of chopper
 
     public bool         isOnGround;                    // Rotor blade uses this
+    public bool         isOnRiver;                     // True if chopper is just above the river
     public bool         justLanded;                    // True on the frame that we land
     private GameObject  muzzle;                        // Bullets are instantiated here
     private GameObject  muzzleTail;                    // Used to get the direction the chopper is facing
@@ -60,15 +64,16 @@ public class ControlChopper : MonoBehaviour {
     private float       prisonerUnloadFreq = 0.5f;     // Frequency that prisoners emerge from chopper
     private float       timeSinceLastUnload = 0.0f;    // Time since last prisoner emerged from chopper
 
-    private const float bulletSpeed = 65.0f;
+    private const float BULLET_SPEED = 65.0f;
     public int          capacity = 16;                 // Max prisoners the chopper can hold
     private bool        fixedUpdateOTS = false;
 
     public GameObject   explosion;                     // Crash explosion
     public bool         isCrashing = false;            // True if chopper is currently crashing
+    public bool         hasExploded = false;           // True if chopper explosion effect has been played
     public float        timeCrashing = 0.0f;           // Time chopper has been crashing
     private const float TIME_TO_CRASH = 7.0f;          // Seconds to wait when crashing before reloading scene
-    private const float MAX_CRASH_FORCE = 20.0f;       // Magnitude of forces to apply when crashing
+    private const float MAX_CRASH_FORCE = 20.0f;       // Max magnitude of forces to apply when crashing
 
     private ManageUI    uiScript;
     private GameObject  landingPad;
@@ -88,6 +93,9 @@ public class ControlChopper : MonoBehaviour {
     private const int SOUND_PRISONER_SCREAM_MIN = 2;
     private const int SOUND_PRISONER_SCREAM_MAX = 4;
 
+    private const float PRISON_COLLIDER_Y_SIZE_NORMAL = 0.6f;   // Y size of collider on prison normally
+    private const float PRISON_COLLIDER_Y_SIZE_CRASH = 0.19f;   // Y size of collider on prison during crash
+
     void Awake() {
         // ChopperMuzzle and ChopperMuzzleTail are zero-size objects; bullets are instantiated on muzzle, and muzzleTail
         //  is used to get a normalized vector of the direction the chopper is pointing so that bullets move in the same
@@ -96,12 +104,14 @@ public class ControlChopper : MonoBehaviour {
         muzzleTail = transform.Find("ChopperMuzzleTail").gameObject;
         muzzleFlashPS = transform.Find("ChopperMuzzleFlash").gameObject.GetComponent<ParticleSystem>();
         startingRotation = transform.rotation;
+        rbody = gameObject.GetComponent<Rigidbody>();
+        rbodyConstraints = rbody.constraints;
     }
 
     void Start () {
         uiScript = GameObject.Find("Canvas").GetComponent<ManageUI>();
         landingPad = GameObject.Find("LandingPad");
-        // Empty objects are used to delimit boundaries
+        // Empty objects are used to mark boundaries
         leftBoundary = GameObject.Find("LeftBoundary").gameObject.transform.position.x;
         rightBoundary = GameObject.Find("RightBoundary").gameObject.transform.position.x;
         leftRiverBoundary = GameObject.Find("LeftRiverBoundary").gameObject.transform.position.x;
@@ -113,36 +123,61 @@ public class ControlChopper : MonoBehaviour {
 
 	void FixedUpdate () {
         fixedUpdateOTS = true;     // Required to prevent multiple calls to OnTriggerStay per frame
-    }
-
-	void Update () {
-        // Landing; this should only happen on the frame when it touches the ground
-        if (!isOnGround &&
-            transform.position.y <= ground &&
-            !(transform.position.x >= leftRiverBoundary &&
-            transform.position.x <= rightRiverBoundary)) {
-                // Crash if player hits ground when going too fast
-                if (Mathf.Abs(hSpeed) >= SPEED_CRASH_FACTOR * MAX_HSPEED) Crash();
-                isOnGround = true;
-                justLanded = true;  // Will only be true for this frame; used to detect if we've landed on a prisoner
-                hSpeed = 0;
-        }
-        else if (justLanded) justLanded = false;
 
         if (isCrashing) {
-            if (justLanded) {   // Just crashed into the ground; explode
-                GameObject soundsClone = GameObject.Instantiate(sounds, transform.position, Quaternion.identity);
-                soundsClone.GetComponents<AudioSource>()[SOUND_CHOPPER_EXPLOSION].Play();
-                Destroy(soundsClone, soundsClone.GetComponents<AudioSource>()[SOUND_CHOPPER_EXPLOSION].clip.length);
-                
-                GameObject expClone = GameObject.Instantiate(explosion, transform.position, Quaternion.identity);
-                Destroy(expClone, 3.5f);
-            }
-
             Crash();
             return;             // Don't do anything else if we're currently crashing
         }
 
+        hAxis = Input.GetAxis("Horizontal");
+        vAxis = Input.GetAxis("Vertical");
+
+        // Testing the velocity in OnCollisionEnter is too late; the collision has already begun to
+        //  slow down the chopper. So, we need to keep track of it here to test for landing too fast
+        hVelocity = rbody.velocity.x;
+
+		if (hAxis != 0 && !isOnGround) {
+            if ((hAxis < 0 && transform.position.x <= leftBoundary) ||
+                (hAxis > 0 && transform.position.x >= rightBoundary))
+                    // Don't allow player to go past boundary; add an opposing force to give a soft stop
+                    rbody.AddForce(0.1f * Vector3.left * hVelocity, ForceMode.VelocityChange);
+
+            else if ((hAxis < 0 && hVelocity > -MAX_HSPEED) || (hAxis > 0 && hVelocity < MAX_HSPEED))
+                rbody.AddForce(hAxis * H_ACCELERATION * Vector3.right, ForceMode.Force);
+
+            if (!isPitching) {          // We've just started pitching
+                pitchingTime = 0.0f;
+                isPitching = true;
+                isLevel = false;
+                isLeveling = false;
+            }
+        }
+
+        // No horizontal input; level out
+        else {
+            if (!isLevel && !isLeveling) {
+                pitchingTime = 0.0f;
+                isLeveling = true;
+                isPitching = false;
+            }
+        }
+
+		if (vAxis != 0) {
+            // Ground collision is handled in OnCollisionEnter/Stay
+            if ((vAxis < 0 && isOnRiver && !isCrashing) || (vAxis > 0 && transform.position.y >= ceiling))
+                rbody.AddForce(Vector3.down * rbody.velocity.y, ForceMode.VelocityChange);
+
+            else if ((vAxis < 0 && rbody.velocity.y > -MAX_VSPEED) || (vAxis > 0 && rbody.velocity.y < MAX_VSPEED))
+                rbody.AddForce(vAxis * V_ACCELERATION * Vector3.up, ForceMode.Force);
+
+        }
+    }
+
+	void Update () {
+        if (isCrashing)
+            return;
+
+        // TODO: try moving this into Rotate()
 		if ((Input.GetAxis("LeftTrigger") > 0 || Input.GetKey("q")) &&
             !isRotatingLeft && !isRotatingRight &&
             !isOnGround &&
@@ -166,47 +201,6 @@ public class ControlChopper : MonoBehaviour {
                 else direction = dir.right;
         }
 
-		if (Input.GetAxis("Horizontal") != 0) {
-            hSpeed += (Input.GetAxis("Horizontal") * Time.deltaTime * H_ACCELERATION);
-            if ((transform.position.x >= rightBoundary && hSpeed > 0) || isOnGround) hSpeed = 0;
-            else if (transform.position.x <= leftBoundary && hSpeed < 0) hSpeed = 0;
-            else if (hSpeed >= MAX_HSPEED) hSpeed = MAX_HSPEED;
-            else if (hSpeed <= -MAX_HSPEED) hSpeed = -MAX_HSPEED;
-
-            if (!isPitching) {          // We've just started pitching
-                pitchingTime = 0.0f;
-                isPitching = true;
-                isLevel = false;
-                isLeveling = false;
-            }
-        }
-
-        else {  // No horizontal input; slow down and level out
-            if (hSpeed > 0) hSpeed -= Time.deltaTime * 0.5f * H_ACCELERATION;
-            else if (hSpeed < 0) hSpeed += Time.deltaTime * 0.5f * H_ACCELERATION;
-
-            if (!isLevel && !isLeveling) {
-                pitchingTime = 0.0f;
-                isLeveling = true;
-                isPitching = false;
-            }
-        }
-
-		if (Input.GetAxis("Vertical") != 0) {
-            vSpeed += (Input.GetAxis("Vertical") * Time.deltaTime * V_ACCELERATION);
-
-            if (vSpeed >= MAX_VSPEED) vSpeed = MAX_VSPEED;
-            else if (vSpeed <= -MAX_VSPEED) vSpeed = -MAX_VSPEED;
-
-            // Taking off
-            if (vSpeed > 0 && isOnGround) isOnGround = false;
-        }
-
-        else {
-            if (vSpeed > 0) vSpeed -= Time.deltaTime * 0.5f * V_ACCELERATION;
-            else if (vSpeed < 0) vSpeed += Time.deltaTime * 0.5f * V_ACCELERATION;
-        }
-
         // Don't fire if the menu has just cleared; prevents the GUI button click from causing an unwanted fire.
         //  For some reason, the timeSinceMenuClear method only works for the joystick, and the timeScale method only
         //  works for the keyboard and mouse, so we need both
@@ -214,54 +208,56 @@ public class ControlChopper : MonoBehaviour {
             Fire();
         if (isLeveling || isPitching) Pitch();
         if (isRotatingLeft || isRotatingRight) Rotate();
-
-        // Keep chopper inside boundaries
-        if (transform.position.x > rightBoundary) {
-            transform.position = new Vector3(rightBoundary, transform.position.y, 0);
-            hSpeed = 0;
-        }
-        else if (transform.position.x < leftBoundary) {
-            transform.position = new Vector3(leftBoundary, transform.position.y, 0);
-            hSpeed = 0;
-        }
-
-        if (transform.position.y > ceiling) {
-            transform.position = new Vector3(transform.position.x, ceiling, 0);
-            vSpeed = 0;
-        }
-        else if (transform.position.y < ground) {
-            transform.position = new Vector3(transform.position.x, ground, 0);
-            vSpeed = 0;
-        }
-
-        transform.Translate(new Vector3(hSpeed, vSpeed, 0) * Time.deltaTime, Space.World);
 	}
 
     public void initChopper() {
         pitch = 0.0f;
-        hSpeed = 0.0f;
-        vSpeed = 0.0f;
-        direction = dir.forward;
-        isRotatingLeft = false;
-        isRotatingRight = false;
         isLevel = true;
         isPitching = false;
         isLeveling = false;
+        direction = dir.forward;
+        isRotatingLeft = false;
+        isRotatingRight = false;
         isOnGround = true;
+        isOnRiver = false;
         justLanded = false;
-
-        gameObject.GetComponent<Rigidbody>().useGravity = false;
-        gameObject.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll;
-
+        rbody.useGravity = false;
+        rbody.constraints = rbodyConstraints;
         transform.rotation = startingRotation;
+        AdjustPrisonColliders();
+        // TODO: don't use ground here, then you can get rid of the var/GO (maybe in all scripts) and also minHeightAboveGround
         transform.position = new Vector3(landingPad.transform.position.x, ground, 0);
+    }
+
+    // Prisons have box colliders stretching into +/-Z so they can be shot, but
+    //  we don't want the chopper to collide with them unless it's crashing
+    void AdjustPrisonColliders() {
+        foreach (GameObject prison in GameObject.FindGameObjectsWithTag("prison")) {
+            BoxCollider prisonCollider = prison.GetComponent<BoxCollider>();
+
+            foreach (BoxCollider chopperCollider in GetComponents<BoxCollider>()) {
+                if (isCrashing) {
+                    Physics.IgnoreCollision(prisonCollider, chopperCollider, false);
+                    prisonCollider.size = new Vector3(prisonCollider.size.x,
+                                                      PRISON_COLLIDER_Y_SIZE_CRASH,
+                                                      prisonCollider.size.z);
+                }
+
+                else {
+                    Physics.IgnoreCollision(prisonCollider, chopperCollider, true);
+                    prisonCollider.size = new Vector3(prisonCollider.size.x,
+                                                      PRISON_COLLIDER_Y_SIZE_NORMAL,
+                                                      prisonCollider.size.z);
+                }
+            }
+        }
     }
 
     private void Fire() {
         if (direction == dir.forward) {
             bulletClone = GameObject.Instantiate(bullet, transform.position + new Vector3(0, -2, 0),
                 Quaternion.identity);
-            bulletClone.GetComponent<Rigidbody>().AddForce(Vector3.down * 0.5f * bulletSpeed, ForceMode.VelocityChange);
+            bulletClone.GetComponent<Rigidbody>().AddForce(Vector3.down * 0.5f * BULLET_SPEED, ForceMode.VelocityChange);
         }
 
         else {
@@ -269,10 +265,10 @@ public class ControlChopper : MonoBehaviour {
             bulletClone.GetComponent<Rigidbody>().useGravity = false;    // Disable gravity for left and right firing
 
             bulletClone.GetComponent<Rigidbody>().AddForce(
-                (muzzle.transform.position - muzzleTail.transform.position) * bulletSpeed, ForceMode.VelocityChange);
+                (muzzle.transform.position - muzzleTail.transform.position) * BULLET_SPEED, ForceMode.VelocityChange);
 
             // Adding an additional horizontal force prevents the appearance of bullet lag when moving fast
-            bulletClone.GetComponent<Rigidbody>().AddForce(Vector3.right * hSpeed * 0.75f, ForceMode.VelocityChange);
+            bulletClone.GetComponent<Rigidbody>().AddForce(Vector3.right * hVelocity * 0.75f, ForceMode.VelocityChange);
         }
 
         muzzleFlashPS.Play();
@@ -282,7 +278,8 @@ public class ControlChopper : MonoBehaviour {
 
     private void Pitch() {
         // Since we're not using Time in this function, the chopper can pitch while the game is paused
-        if (Time.timeScale != 1) return;
+        if (Time.timeScale != 1)
+            return;
 
         // Level out faster when we're on the ground
         if (isOnGround) pitchingTime += Time.deltaTime * 3;
@@ -335,7 +332,7 @@ public class ControlChopper : MonoBehaviour {
             isPitching = false;
         }
         else if (isRotatingLeft) transform.Rotate(Vector3.up, rotation);
-        else if (isRotatingRight) transform.Rotate(Vector3.up, -rotation);
+        else if (isRotatingRight) transform.Rotate(Vector3.down, rotation);
         Pitch();
 
         // Inputs that give a constant input, like triggers, can cause the chopper to turn twice before the user
@@ -367,11 +364,12 @@ public class ControlChopper : MonoBehaviour {
             foreach (GameObject tank in GameObject.FindGameObjectsWithTag("tank"))
                 tank.GetComponent<ManageTank>().enabled = false;
 
-            gameObject.GetComponent<Rigidbody>().useGravity = true;
-            gameObject.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.None;
+            AdjustPrisonColliders();
+            rbody.useGravity = true;
+            rbody.constraints = RigidbodyConstraints.None;
 
             // Add random forces in all directions for an interesting crash
-            gameObject.GetComponent<Rigidbody>().AddForce(
+            rbody.AddForce(
 //                Vector3.down * Random.Range(-MAX_CRASH_FORCE, MAX_CRASH_FORCE) + 
                 Vector3.left * Random.Range(-MAX_CRASH_FORCE, MAX_CRASH_FORCE) + 
                 Vector3.forward * Random.Range(-MAX_CRASH_FORCE, MAX_CRASH_FORCE),
@@ -380,25 +378,38 @@ public class ControlChopper : MonoBehaviour {
             // FIXME: this doesn't work right; want a consistent tailspin
             // Induce spin
             if (direction == dir.forward)
-                gameObject.GetComponent<Rigidbody>().AddForceAtPosition(
+                rbody.AddForceAtPosition(
                     Vector3.right * 10f, transform.position + new Vector3(0.0f, 0.0f, 0.5f),
                     ForceMode.VelocityChange);
             else if (direction == dir.left)
-                gameObject.GetComponent<Rigidbody>().AddForceAtPosition(
+                rbody.AddForceAtPosition(
                     Vector3.forward * -10f, transform.position + new Vector3(0.0f, 0.0f, 0.5f),
                     ForceMode.VelocityChange);
             else
-                gameObject.GetComponent<Rigidbody>().AddForceAtPosition(
+                rbody.AddForceAtPosition(
                     Vector3.forward * -10f, transform.position + new Vector3(0.0f, 0.0f, 0.5f),
                     ForceMode.VelocityChange);
 //            Vector3 forceDir = gameObject.GetComponent<Rigidbody>().transform.position - transform.position;
 //            gameObject.GetComponent<Rigidbody>().AddForceAtPosition(forceDir.normalized, transform.position);
         }
 
+        // Explode when chopper hits the ground; need to keep track of whether we've already exploded
+        //  as the chopper can bounce on the ground, causing justLanded to be true multiple times
+        if (justLanded && !hasExploded) {
+            hasExploded = true;
+            GameObject soundsClone = GameObject.Instantiate(sounds, transform.position, Quaternion.identity);
+            soundsClone.GetComponents<AudioSource>()[SOUND_CHOPPER_EXPLOSION].Play();
+            Destroy(soundsClone, soundsClone.GetComponents<AudioSource>()[SOUND_CHOPPER_EXPLOSION].clip.length);
+            
+            GameObject expClone = GameObject.Instantiate(explosion, transform.position, Quaternion.identity);
+            Destroy(expClone, 3.5f);
+        }
+
         if (timeCrashing >= TIME_TO_CRASH) {
             // Don't do this if it's the last chopper crashing
             if (uiScript.numChoppersLeft > 1) {
                 isCrashing = false;
+                hasExploded = false;
 
                 // Crash scene is done; set tanks back to active
                 foreach (GameObject turret in GameObject.FindGameObjectsWithTag("turret"))
@@ -422,7 +433,7 @@ public class ControlChopper : MonoBehaviour {
     }
 
     void OnTriggerStay(Collider col) {
-        // Required to prevent multiple executions of this per frame, despite what the docs say
+        // Required to prevent multiple executions of this per FixedUpdate, despite what the docs say
         if (fixedUpdateOTS) {
             fixedUpdateOTS = false;
 
@@ -441,10 +452,10 @@ public class ControlChopper : MonoBehaviour {
                     //  on the cockpit. When facing forward, colliding with either of these is sufficient to climb
                     //  into the chopper; when facing left or right, the prisoner has to collide with both
                     else if (uiScript.prisonersOnboard < capacity &&
-                             !isCrashing &&
-                             (col.gameObject.GetComponent<ManagePrisoner>().numChopperColliders == 1 &&
+                                !isCrashing &&
+                                (col.gameObject.GetComponent<ManagePrisoner>().numChopperColliders == 1 &&
                                 direction == dir.forward ||
-                              col.gameObject.GetComponent<ManagePrisoner>().numChopperColliders > 1 &&
+                                col.gameObject.GetComponent<ManagePrisoner>().numChopperColliders > 1 &&
                                 direction != dir.forward))
                     {
                         // Pick up prisoner
@@ -459,12 +470,12 @@ public class ControlChopper : MonoBehaviour {
                     }
                 }
 
-                else if ((col.gameObject.tag == "landingPad") &&
-                    uiScript.prisonersOnboard > 0) {
+                else if ((col.gameObject.tag == "landingPad") && uiScript.prisonersOnboard > 0) {
                     // On landing pad; unload prisoners
                     timeSinceLastUnload += Time.deltaTime;
 
                     // FIXME: prisoners unload slower if facing left/right vs. forward
+                    // FIXME: probably unloading at double speed due to having 2 colliders on chopper
                     if (timeSinceLastUnload >= prisonerUnloadFreq) {
                         GetComponents<AudioSource>()[SOUND_PRISONER_BOARD].Play();
                         GameObject.Instantiate(prisoner, transform.position + new Vector3(2, -1.65f, 0),
@@ -479,15 +490,46 @@ public class ControlChopper : MonoBehaviour {
         }
     }
 
-    /* TODO: chopper should crash into terrain this way; avoids chopper clipping into terrain
-        Crash works with the below, but no explosion effect or sound happens
+    void OnTriggerEnter(Collider col) {
+        if (col.gameObject.tag == "river")
+            isOnRiver = true;
+    }
+
+    void OnTriggerExit(Collider col) {
+        if (col.gameObject.tag == "river")
+            isOnRiver = false;
+    }
+
     void OnCollisionEnter(Collision col) {
-        if (!isCrashing && col.gameObject.tag == "terrain" && Mathf.Abs(hSpeed) >= SPEED_CRASH_FACTOR * MAX_HSPEED) {
-            Crash();
-            isOnGround = true;
-            justLanded = true;
-            Debug.Log("Crashing in OnCollisionEnter");
+        if (col.gameObject.tag == "terrain") {
+            if (!isCrashing) {
+                if (transform.position.x < leftRiverBoundary || transform.position.x > rightRiverBoundary) {
+                    // Crash if player hits ground when going too fast
+                    if (Mathf.Abs(hVelocity) > SPEED_CRASH_FACTOR * MAX_HSPEED) Crash();
+                    else {
+                        // Will only be true for this frame; used to detect if we've landed on a prisoner
+                        justLanded = true;
+                        isOnGround = true;
+                    }
+                }
+            }
+            else {
+                justLanded = true;
+                isOnGround = true;
+            }
         }
     }
-    */
+
+    void OnCollisionStay(Collision col) {
+        if (col.gameObject.tag == "terrain" && justLanded)
+            justLanded = false;
+    }
+
+    void OnCollisionExit(Collision col) {
+        if (col.gameObject.tag == "terrain") {
+            // Probably not needed, but just in case player only lands for one frame and OCS is called before OCE
+    //        justLanded = false;
+            isOnGround = false;
+        }
+    }
 }

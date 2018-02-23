@@ -45,6 +45,8 @@ public class ManageJet : MonoBehaviour {
     private bool        isSwooping = false;
     private bool        isRetreating = false;
     private bool        isHeadingRight;                 // True if jet is heading to the right; false if heading left
+    private ManageChopper chopperScript;
+    private Rigidbody   chopperRbody;
     private float       chopperStillMaxSpeed;           // Max speed at which chopper is considered to be still
     private bool        chopperMoving = false;          // True if chopper is nearly still; used for swooping
     private GameObject  chopper;
@@ -60,6 +62,7 @@ public class ManageJet : MonoBehaviour {
         missiles[0] = transform.Find("MissileLeft").gameObject;
         missiles[1] = transform.Find("MissileRight").gameObject;
 
+        // TODO: use https://docs.unity3d.com/ScriptReference/Physics.IgnoreCollision.html
         foreach (GameObject missile in missiles) {
             missile.GetComponent<Rigidbody>().detectCollisions = false;             // Disable Rigidbody until launched
             missile.transform.Find("MissileExhaust").gameObject.SetActive(false);   // Disable exhaust effect
@@ -72,6 +75,8 @@ public class ManageJet : MonoBehaviour {
 
 	void Start () {
 		chopper = GameObject.Find("Chopper");
+		chopperRbody = chopper.GetComponent<Rigidbody>();
+        chopperScript = chopper.GetComponent<ManageChopper>();
         enemyTerritoryBoundary = GameObject.Find("LeftRiverBoundary").transform.position.x;
         chopperStillMaxSpeed = GameObject.Find("Enemies").GetComponent<SpawnEnemies>().chopperStillMaxSpeed;
 
@@ -169,8 +174,8 @@ public class ManageJet : MonoBehaviour {
             !chopperMoving)))) {
                 isHeadingRight = !isHeadingRight;   // Change direction
 
-                Debug.Log("Chopper hspeed = " + chopper.GetComponent<ControlChopper>().hSpeed);
-                if (Mathf.Abs(chopper.GetComponent<ControlChopper>().hSpeed) > chopperStillMaxSpeed) {
+                Debug.Log("Chopper velocity = " + chopperRbody.velocity.x);
+                if (Mathf.Abs(chopperRbody.velocity.x) > chopperStillMaxSpeed) {
                     chopperMoving = true;
                     Debug.Log("chopperMoving = true");
                 }
@@ -203,10 +208,11 @@ public class ManageJet : MonoBehaviour {
             isSwooping = true;
             // Match chopper speed if it's moving
             if (chopperMoving) {
-                speed = 1.5f * chopper.GetComponent<ControlChopper>().hSpeed;
+//                speed = 1.5f * chopper.GetComponent<ManageChopper>().hSpeed;
+                speed = 1.5f * chopperRbody.velocity.x;
                 Debug.Log("Starting swoop. Matching chopper speed at " + speed);
             }
-            else Debug.Log("Starting swoop. Chopper is still at " + chopper.GetComponent<ControlChopper>().hSpeed);
+            else Debug.Log("Starting swoop. Chopper is still at " + chopperRbody.velocity.x);
 
             // Box collider across wings is long while hunting so it passes through Z=0, but
             //  once it swoops we need to change the collider to match the actual wingspan
@@ -235,6 +241,7 @@ public class ManageJet : MonoBehaviour {
     }
 
     void Attack() {
+        // FIXME: missiles stop falling if jet is destroyed
         // Fire; detach missiles from jet, enable colliders and particle effects, and add force
         foreach (GameObject missile in missiles) {
             missile.transform.parent = null;
@@ -291,7 +298,7 @@ Debug.Log("Starting retreat.");
                 Quaternion.identity);
             Destroy(expClone, 3);   // Explosion lasts 3 secs
             Destroy(gameObject);
-            col.gameObject.GetComponent<ControlChopper>().Crash();
+            col.gameObject.GetComponent<ManageChopper>().Crash();
         }
     }
 }

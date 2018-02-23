@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class RotorBladeSpin : MonoBehaviour {
-    private ControlChopper chopperScript;
+    private ManageChopper chopperScript;
     private float minSpeed;                         // Current minimum speed of rotor
     private const float MIN_SPEED_CRASHING = 0.0f;  // Degrees/sec at min rotor speed when crashing
     private const float MIN_SPEED = 500.0f;         // Degrees/sec at min rotor speed
@@ -44,7 +44,7 @@ public class RotorBladeSpin : MonoBehaviour {
     }
 
     void Start() {
-        chopperScript = GameObject.Find("Chopper").GetComponent<ControlChopper>();
+        chopperScript = GameObject.Find("Chopper").GetComponent<ManageChopper>();
     }
 
 	void Update () {

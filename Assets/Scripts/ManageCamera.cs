@@ -36,8 +36,9 @@ public class ManageCamera : MonoBehaviour {
     void Awake() {
         chopper = GameObject.Find("Chopper");
         chopperMinHeight = GameObject.Find("Terrain").gameObject.transform.position.y +
-            chopper.GetComponent<ControlChopper>().minHeightAboveGround;
-        chopperMaxHeight = GameObject.Find("Ceiling").gameObject.transform.position.y;
+            chopper.GetComponent<ManageChopper>().minHeightAboveGround;
+        // Chopper can go slightly above ceiling since we're not correcting the height if it does
+        chopperMaxHeight = GameObject.Find("Ceiling").gameObject.transform.position.y + 1;
         cameraMaxHeight = GameObject.Find("CameraCeiling").gameObject.transform.position.y;
         chopperMidpoint = (chopperMaxHeight - chopperMinHeight) / 2;
 
@@ -52,11 +53,14 @@ public class ManageCamera : MonoBehaviour {
     }
 
 	void Update () {
+        if (titleIsZooming)
+            ZoomTitle();
+	}
+
+	void LateUpdate () {
         // Keep camera pointed at chopper
         transform.position = new Vector3(chopper.transform.position.x, GetYPos(), GetZPos());
-
-        if (titleIsZooming) ZoomTitle();
-	}
+    }
 
     // Returns the Y position of the camera
     float GetYPos() {

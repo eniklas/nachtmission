@@ -41,7 +41,7 @@ public class SpawnEnemies : MonoBehaviour {
         leftBoundary = GameObject.Find("LeftBoundary").transform.position.x;
         ceiling = GameObject.Find("Ceiling").transform.position.y;
         ground = GameObject.Find("Terrain").transform.position.y +
-            chopper.GetComponent<ControlChopper>().minHeightAboveGround;
+            chopper.GetComponent<ManageChopper>().minHeightAboveGround;
 	}
 
     public void IntroduceTanks() {
@@ -88,7 +88,7 @@ public class SpawnEnemies : MonoBehaviour {
     void SpawnJet() {
         // Only spawn a jet if the chopper is in enemy territory; spawn just off the screen to the left
         if (chopper.transform.position.x < rightBoundary) {
-            if (chopper.GetComponent<ControlChopper>().hSpeed > chopperStillMaxSpeed &&
+            if (chopper.GetComponent<Rigidbody>().velocity.x > chopperStillMaxSpeed &&
                 rightBoundary - chopper.transform.position.x > JET_SPAWN_DISTANCE_X) {
                     GameObject.Instantiate(jet,
                         new Vector3(chopper.transform.position.x + JET_SPAWN_DISTANCE_X,
