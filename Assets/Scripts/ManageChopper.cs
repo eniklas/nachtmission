@@ -350,6 +350,7 @@ public class ManageChopper : MonoBehaviour {
         else                               transform.eulerAngles = new Vector3(0, RIGHT_ANGLE, 0);
     }
 
+    // TODO: fall faster
     public void Crash() {
         timeCrashing += Time.deltaTime;
 
