@@ -35,6 +35,12 @@ public class ManageBullet : MonoBehaviour {
         uiScript = GameObject.Find("Canvas").GetComponent<ManageUI>();
     }
 
+    // Plays a particle effect and destroys it when done
+    void PlayEffect(GameObject effect, Vector3 position) {
+        GameObject effectClone = GameObject.Instantiate(effect, position, Quaternion.identity);
+        Destroy(effectClone, effectClone.GetComponent<ParticleSystem>().main.duration);
+    }
+
     // Plays a sound from the Sounds prefab; we can't easily put the sounds on
     //  the bullet or target object, since they're immediately destroyed.
     void PlaySound(int offset) {
@@ -50,50 +56,42 @@ public class ManageBullet : MonoBehaviour {
     }
 
     void OnCollisionEnter(Collision col) {
+        // TODO: use IgnoreCollision
         if (col.gameObject.tag == "tank" && gameObject.tag != "source:tank") {
+            PlayEffect(bigExplosion, col.gameObject.transform.position + new Vector3(0, 2, 0));
             PlaySound(SOUND_TANK_EXPLOSION);
-
-            GameObject expClone = GameObject.Instantiate(bigExplosion, col.gameObject.transform.position + new Vector3(0, 2, 0), Quaternion.identity);
-            Destroy(expClone, 3);   // Explosion lasts 3 secs
             Destroy(col.gameObject);
         }
 
         else if (col.gameObject.tag == "jet") {
+            PlayEffect(bigExplosion, col.gameObject.transform.position);
             PlaySound(SOUND_JET_EXPLOSION);
-
-            GameObject expClone =
-                GameObject.Instantiate(bigExplosion, col.gameObject.transform.position, Quaternion.identity);
-            Destroy(expClone, 3);
             Destroy(col.gameObject);
         }
 
+        // TODO: use IgnoreCollision
         else if (col.gameObject.tag == "drone") {
             if (gameObject.tag != "source:drone") {
+                PlayEffect(bigExplosion, col.gameObject.transform.position);
                 PlaySound(SOUND_DRONE_EXPLOSION);
-
-                GameObject expClone =
-                    GameObject.Instantiate(bigExplosion, col.gameObject.transform.position, Quaternion.identity);
-                Destroy(expClone, 3);
                 Destroy(col.gameObject);
             }
         }
 
+        // TODO: use IgnoreCollision
         else if (col.gameObject.tag == "chopper" && gameObject.tag != "source:chopper") {
+            PlayEffect(bigExplosion, col.gameObject.transform.position);
             PlaySound(SOUND_CHOPPER_HIT);
-
-            GameObject expClone =
-                GameObject.Instantiate(bigExplosion, col.gameObject.transform.position, Quaternion.identity);
-            Destroy(expClone, 3);
             col.gameObject.GetComponent<ManageChopper>().Crash();
         }
 
         else if (col.gameObject.tag == "prison") {
             // Prison explosion sound is part of the PrisonDamaged prefab, and played on awake
-            GameObject expClone = GameObject.Instantiate(bigExplosion, col.gameObject.transform.position +
-                new Vector3(0, 0, -11), Quaternion.identity);
-            Destroy(expClone, 3);
+            PlayEffect(bigExplosion, col.gameObject.transform.position +
+                       new Vector3(0, 0, -11));
 
             // Replace prison with damaged model
+            // TODO: can you just rotate the prefab?
             // Have to use Quaternion.Euler below because PrisonDamaged model was rotated when imported
             GameObject.Instantiate(PrisonDamaged, col.gameObject.transform.position, Quaternion.Euler(-90, 180, 0));
 
@@ -110,11 +108,8 @@ public class ManageBullet : MonoBehaviour {
 
         // If we hit a non-targetable object like the ground, just explode where it hit
         else {
+            PlayEffect(explosion, transform.position);
             PlaySound(SOUND_GROUND_EXPLOSION);
-
-            GameObject expClone = GameObject.Instantiate(explosion, transform.position, Quaternion.identity);
-            // FIXME: this causes the bullet to flicker on when explosion is destroyed
-            Destroy(expClone, 2);
         }
 
         // Destroy bullet/missile, but don't allow missile to collide with jet
