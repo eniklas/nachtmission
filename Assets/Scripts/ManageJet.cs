@@ -62,10 +62,10 @@ public class ManageJet : MonoBehaviour {
         missiles[0] = transform.Find("MissileLeft").gameObject;
         missiles[1] = transform.Find("MissileRight").gameObject;
 
-        // TODO: use https://docs.unity3d.com/ScriptReference/Physics.IgnoreCollision.html
         foreach (GameObject missile in missiles) {
-            missile.GetComponent<Rigidbody>().detectCollisions = false;             // Disable Rigidbody until launched
-            missile.transform.Find("MissileExhaust").gameObject.SetActive(false);   // Disable exhaust effect
+            // Ignore collisions with jet, and disable exhaust effect
+            Physics.IgnoreCollision(missile.GetComponent<BoxCollider>(), GetComponent<BoxCollider>());
+            missile.transform.Find("MissileExhaust").gameObject.SetActive(false);
         }
 
         psMainLeftExhaust = transform.Find("JetExhaustLeft").GetComponent<ParticleSystem>().main;

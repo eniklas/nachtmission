@@ -59,14 +59,12 @@ public class ManageBullet : MonoBehaviour {
         }
 
         else if (col.gameObject.tag == "jet") {
-            if (gameObject.tag != "missile") {  // Don't allow missile to collide with jet
-                PlaySound(SOUND_JET_EXPLOSION);
+            PlaySound(SOUND_JET_EXPLOSION);
 
-                GameObject expClone =
-                    GameObject.Instantiate(bigExplosion, col.gameObject.transform.position, Quaternion.identity);
-                Destroy(expClone, 3);
-                Destroy(col.gameObject);
-            }
+            GameObject expClone =
+                GameObject.Instantiate(bigExplosion, col.gameObject.transform.position, Quaternion.identity);
+            Destroy(expClone, 3);
+            Destroy(col.gameObject);
         }
 
         else if (col.gameObject.tag == "drone") {
