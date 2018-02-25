@@ -179,9 +179,11 @@ public class ManagePrisoner : MonoBehaviour {
 
         // To make the prisoners climb into the cockpit instead of the nose or tail when chopper is facing
         //  left/right, we need to keep track of how many box colliders the prisoner is colliding with
-        else if (col.gameObject.tag == "chopper") numChopperColliders += 1;
+        else if (col.gameObject.tag == "chopper")
+            numChopperColliders += 1;
 
-        else if (col.gameObject.tag == "baseWall") Destroy(gameObject, 0.5f); // Reached base
+        else if (col.gameObject.tag == "baseWall")
+            Destroy(gameObject, 0.5f); // Reached base
     }
 
     void OnTriggerExit(Collider col) {

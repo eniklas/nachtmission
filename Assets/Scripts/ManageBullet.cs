@@ -10,7 +10,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// TODO: write method that plays explosion effects and destroys them after 1 play
 public class ManageBullet : MonoBehaviour {
     public GameObject explosion;                    // Small explosion used when bullet hits ground
     public GameObject bigExplosion;                 // Big explosion used when a major object is hit
@@ -112,26 +111,16 @@ public class ManageBullet : MonoBehaviour {
             PlaySound(SOUND_GROUND_EXPLOSION);
         }
 
-        // Destroy bullet/missile, but don't allow missile to collide with jet
-        if (!(col.gameObject.tag == "jet" && gameObject.tag == "missile")) Destroy(gameObject);
+        Destroy(gameObject);
     }
 
     // Prisoner prefab has a trigger collider
     void OnTriggerEnter(Collider col) {
-        // Can't shoot a prisoner when he's running into base; it would be difficult to do that anyway since he
-        //  immediately leaves Z=0, but possible, in which case the counts would get screwed up. If you want to
-        //  allow shooting prisoners as they run into base, you need a new state when they're doing so (not
-        //  onboard and not rescued)
         if (col.gameObject.tag == "prisoner" && !col.gameObject.GetComponent<ManagePrisoner>().isRescued) {
-            // We could play the prisoner scream directly with PlaySound(), but the chopper needs to
-            //  do it for landing on prisoners, so might as well use the same method
             chopper.GetComponent<ManageChopper>().PrisonerScream();
-
-            GameObject expClone = GameObject.Instantiate(explosion,
-                col.gameObject.transform.position + new Vector3(0, 1, 0), Quaternion.identity);
+            PlayEffect(explosion, col.gameObject.transform.position);
             Destroy(col.gameObject);
-            Destroy(expClone, 2);
-
+            Destroy(gameObject);
             uiScript.prisonersKilled++;
             uiScript.UpdateScore();
         }

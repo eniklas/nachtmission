@@ -479,7 +479,7 @@ public class ManageChopper : MonoBehaviour {
                     // FIXME: probably unloading at double speed due to having 2 colliders on chopper
                     if (timeSinceLastUnload >= prisonerUnloadFreq) {
                         GetComponents<AudioSource>()[SOUND_PRISONER_BOARD].Play();
-                        GameObject.Instantiate(prisoner, transform.position + new Vector3(2, -1.65f, 0),
+                        GameObject.Instantiate(prisoner, transform.position + new Vector3(2, -1.35f, 0),
                             Quaternion.Euler(0, 180, 0));
                         uiScript.prisonersOnboard--;
                         uiScript.prisonersRescued++;

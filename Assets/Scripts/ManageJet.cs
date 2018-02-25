@@ -104,7 +104,6 @@ public class ManageJet : MonoBehaviour {
 	}
 
 	void Update () {
-        if (Time.frameCount % 25 == 0) Debug.Log("Jet speed = " + speed);
         transform.position = new Vector3(GetXPos(), GetYPos(), GetZPos());
         // Could also use a finite state machine for this
         if (isHunting) Hunt();
@@ -167,11 +166,9 @@ public class ManageJet : MonoBehaviour {
             !chopperMoving)))) {
                 isHeadingRight = !isHeadingRight;   // Change direction
 
-                Debug.Log("Chopper velocity = " + chopperRbody.velocity.x);
-                if (Mathf.Abs(chopperRbody.velocity.x) > chopperStillMaxSpeed) {
+                if (Mathf.Abs(chopperRbody.velocity.x) > chopperStillMaxSpeed)
                     chopperMoving = true;
-                    Debug.Log("chopperMoving = true");
-                }
+
                 Swoop();
         }
 
@@ -200,11 +197,8 @@ public class ManageJet : MonoBehaviour {
             isRetreating = false;
             isSwooping = true;
             // Match chopper speed if it's moving
-            if (chopperMoving) {
+            if (chopperMoving)
                 speed = 1.5f * chopperRbody.velocity.x;
-                Debug.Log("Starting swoop. Matching chopper speed at " + speed);
-            }
-            else Debug.Log("Starting swoop. Chopper is still at " + chopperRbody.velocity.x);
 
             // Box collider across wings is long while hunting so it passes through Z=0, but
             //  once it swoops we need to change the collider to match the actual wingspan
@@ -236,7 +230,6 @@ public class ManageJet : MonoBehaviour {
         // Fire; detach missiles from jet, enable colliders and particle effects, and add force
         foreach (GameObject missile in missiles) {
             missile.transform.parent = null;
-            missile.GetComponent<Rigidbody>().detectCollisions = true;
             missile.transform.Find("MissileExhaust").gameObject.SetActive(true);   // Enable exhaust effect
 
             // Add horizontal force; downward acceleration is done in ManageBullet
@@ -253,7 +246,6 @@ public class ManageJet : MonoBehaviour {
     // TODO: it looks cool when they fly off into +Z; do that sometimes
     void Retreat() {
         if (!isRetreating) {
-Debug.Log("Starting retreat.");
             isHunting = false;
             isRetreating = true;
             isSwooping = false;
@@ -262,7 +254,6 @@ Debug.Log("Starting retreat.");
             if (!chopperMoving) {
                 if (isHeadingRight) speed = DEFAULT_SPEED;
                 else speed = -DEFAULT_SPEED;
-                Debug.Log("Chopper not moving. Initial retreat speed = " + speed);
             }
         }
 
@@ -277,9 +268,7 @@ Debug.Log("Starting retreat.");
 
         // Note that this will be true if the Scene camera can see it, so the jet may stay around longer in dev
         if (Mathf.Abs(transform.position.x - chopper.transform.position.x) > 100 && !GetComponent<Renderer>().isVisible)
-            // Don't destroy the jet too early, otherwise the missiles may
-            //  slow down before impact because the script has exited
-            Destroy(gameObject, 3);
+            Destroy(gameObject, 1);
     }
 
     void OnCollisionEnter(Collision col) {
