@@ -11,23 +11,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class ManageBullet : MonoBehaviour {
-    public GameObject explosion;                    // Small explosion used when bullet hits ground
-    public GameObject bigExplosion;                 // Big explosion used when a major object is hit
-    public GameObject smoke;
-    public GameObject fire;
-    public GameObject sounds;
-    private GameObject smokeClone;
-    private GameObject fireClone;
-    private GameObject soundsClone;
-    public GameObject PrisonDamaged;                // Prefab of prison that has been hit
-    private GameObject chopper;
-    private ManageUI uiScript;
-    private ParticleSystem.MainModule psMain;       // Used to modify smoke
-    private const int SOUND_GROUND_EXPLOSION = 0;   // Offset in the Sounds prefab
-    private const int SOUND_TANK_EXPLOSION = 1;
-    private const int SOUND_JET_EXPLOSION = 5;
-    private const int SOUND_DRONE_EXPLOSION = 6;
-    private const int SOUND_CHOPPER_HIT = 7;
+    public  GameObject  explosion;              // Small explosion used when bullet hits ground
+    public  GameObject  bigExplosion;           // Big explosion used when a major object is hit
+    public  GameObject  smoke;                  // Smoke used for damaged prison
+    public  GameObject  fire;                   // Fire used for damaged prison
+    public  GameObject  sounds;
+    private GameObject  smokeClone;
+    private GameObject  fireClone;
+    private GameObject  soundsClone;
+    public  GameObject  PrisonDamaged;          // Prefab of prison that has been hit
+    private GameObject  chopper;
+    private ManageUI    uiScript;
+    private bool        fixedUpdateOTS = false;
+    private ParticleSystem.MainModule psMain;   // Used to modify smoke
+    // Offsets in the Sounds prefab
+    private const int  SOUND_GROUND_EXPLOSION = 0;
+    private const int  SOUND_TANK_EXPLOSION = 1;
+    private const int  SOUND_JET_EXPLOSION = 5;
+    private const int  SOUND_DRONE_EXPLOSION = 6;
+    private const int  SOUND_CHOPPER_HIT = 7;
 
     void Start() {
         chopper = GameObject.Find("Chopper");
@@ -49,6 +51,7 @@ public class ManageBullet : MonoBehaviour {
     }
 
 	void FixedUpdate () {
+        fixedUpdateOTS = true;     // Required to prevent multiple calls to OnTriggerStay per frame
         // Missiles accelerate downwards once launched
         if (tag == "missile" && transform.parent == null)
             GetComponent<Rigidbody>().AddForce(Vector3.down * 20, ForceMode.Acceleration);
@@ -109,15 +112,20 @@ public class ManageBullet : MonoBehaviour {
         Destroy(gameObject);
     }
 
-    // Prisoner prefab has a trigger collider
-    void OnTriggerEnter(Collider col) {
-        if (col.gameObject.tag == "prisoner" && !col.gameObject.GetComponent<ManagePrisoner>().isRescued) {
-            chopper.GetComponent<ManageChopper>().PrisonerScream();
-            PlayEffect(explosion, col.gameObject.transform.position);
-            Destroy(col.gameObject);
-            Destroy(gameObject);
-            uiScript.prisonersKilled++;
-            uiScript.UpdateScore();
+    // Prisoner has a trigger collider
+    void OnTriggerStay(Collider col) {
+        // Required to prevent multiple executions of this per FixedUpdate
+        if (fixedUpdateOTS) {
+            fixedUpdateOTS = false;
+
+            if (col.gameObject.tag == "prisoner" && !col.gameObject.GetComponent<ManagePrisoner>().isRescued) {
+                chopper.GetComponent<ManageChopper>().PrisonerScream();
+                PlayEffect(explosion, col.gameObject.transform.position);
+                Destroy(col.gameObject);
+                Destroy(gameObject);
+                uiScript.prisonersKilled++;
+                uiScript.UpdateScore();
+            }
         }
 
     }
