@@ -68,7 +68,7 @@ public class ManageChopper : MonoBehaviour {
     public int          capacity = 16;                 // Max prisoners the chopper can hold
     private bool        fixedUpdateOTS = false;
 
-    public GameObject   explosion;                     // Crash explosion
+    public GameObject   bigExplosion;                  // Crash explosion
     public bool         isCrashing = false;            // True if chopper is currently crashing
     public bool         hasExploded = false;           // True if chopper explosion effect has been played
     public float        timeCrashing = 0.0f;           // Time chopper has been crashing
@@ -82,7 +82,6 @@ public class ManageChopper : MonoBehaviour {
     public GameObject bullet;
     private GameObject bulletClone;
     public GameObject sounds;
-    private GameObject soundsClone;
 
     // Offsets for audio clips attached to this object
     private const int SOUND_FIRE = 0;
@@ -90,8 +89,11 @@ public class ManageChopper : MonoBehaviour {
 
     // The following are contained in the Sounds prefab
     private const int SOUND_CHOPPER_EXPLOSION = 1;
+    private const int SOUND_TANK_EXPLOSION = 1;
     private const int SOUND_PRISONER_SCREAM_MIN = 2;
     private const int SOUND_PRISONER_SCREAM_MAX = 4;
+    private const int SOUND_JET_EXPLOSION = 5;
+    private const int SOUND_DRONE_EXPLOSION = 6;
 
     private const float PRISON_COLLIDER_Y_SIZE_NORMAL = 0.6f;   // Y size of collider on prison normally
     private const float PRISON_COLLIDER_Y_SIZE_CRASH = 0.19f;   // Y size of collider on prison during crash
@@ -227,6 +229,18 @@ public class ManageChopper : MonoBehaviour {
         AdjustPrisonColliders();
         // TODO: don't use ground here, then you can get rid of the var/GO (maybe in all scripts) and also minHeightAboveGround
         transform.position = new Vector3(landingPad.transform.position.x, ground, 0);
+    }
+
+    // Plays a particle effect and destroys it when done
+    void PlayEffect(GameObject effect, Vector3 position) {
+        GameObject effectClone = GameObject.Instantiate(effect, position, Quaternion.identity);
+        Destroy(effectClone, effectClone.GetComponent<ParticleSystem>().main.duration);
+    }
+
+    void PlaySound(int offset) {
+        GameObject soundsClone = GameObject.Instantiate(sounds, transform.position, Quaternion.identity);
+        soundsClone.GetComponents<AudioSource>()[offset].Play();
+        Destroy(soundsClone, soundsClone.GetComponents<AudioSource>()[offset].clip.length);
     }
 
     // Prisons have box colliders stretching into +/-Z so they can be shot, but
@@ -400,12 +414,8 @@ public class ManageChopper : MonoBehaviour {
         //  as the chopper can bounce on the ground, causing justLanded to be true multiple times
         if (justLanded && !hasExploded) {
             hasExploded = true;
-            GameObject soundsClone = GameObject.Instantiate(sounds, transform.position, Quaternion.identity);
-            soundsClone.GetComponents<AudioSource>()[SOUND_CHOPPER_EXPLOSION].Play();
-            Destroy(soundsClone, soundsClone.GetComponents<AudioSource>()[SOUND_CHOPPER_EXPLOSION].clip.length);
-            
-            GameObject expClone = GameObject.Instantiate(explosion, transform.position, Quaternion.identity);
-            Destroy(expClone, 3.5f);
+            PlayEffect(bigExplosion, transform.position);
+            PlaySound(SOUND_CHOPPER_EXPLOSION);
         }
 
         if (timeCrashing >= TIME_TO_CRASH) {
@@ -428,11 +438,7 @@ public class ManageChopper : MonoBehaviour {
 
     // Produces a random prisoner scream sound
     public void PrisonerScream() {
-        int offset = Random.Range(SOUND_PRISONER_SCREAM_MIN, SOUND_PRISONER_SCREAM_MAX + 1);
-
-        GameObject soundsClone = GameObject.Instantiate(sounds, transform.position, Quaternion.identity);
-        soundsClone.GetComponents<AudioSource>()[offset].Play();
-        Destroy(soundsClone, soundsClone.GetComponents<AudioSource>()[offset].clip.length);
+        PlaySound(Random.Range(SOUND_PRISONER_SCREAM_MIN, SOUND_PRISONER_SCREAM_MAX + 1));
     }
 
     void OnTriggerStay(Collider col) {
@@ -520,6 +526,15 @@ public class ManageChopper : MonoBehaviour {
                 justLanded = true;
                 isOnGround = true;
             }
+        }
+        else if (col.gameObject.tag == "jet" || col.gameObject.tag == "tank" || col.gameObject.tag == "drone") {
+            if (col.gameObject.tag == "jet")        PlaySound(SOUND_JET_EXPLOSION);
+            else if (col.gameObject.tag == "tank")  PlaySound(SOUND_TANK_EXPLOSION);
+            else if (col.gameObject.tag == "drone") PlaySound(SOUND_DRONE_EXPLOSION);
+
+            PlayEffect(bigExplosion, col.gameObject.transform.position);
+            Destroy(col.gameObject);
+            Crash();
         }
     }
 

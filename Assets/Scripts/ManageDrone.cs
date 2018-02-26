@@ -146,16 +146,7 @@ public class ManageDrone : MonoBehaviour {
     }
 
     void OnCollisionEnter(Collision col) {
-        if (col.gameObject.tag == "chopper") {
-            PlaySound(SOUND_CRASH);
-            GameObject expClone = GameObject.Instantiate(explosion, col.gameObject.transform.position,
-                Quaternion.identity);
-            Destroy(expClone, 3);   // Explosion lasts 3 secs
-            col.gameObject.GetComponent<ManageChopper>().Crash();
-            Destroy(gameObject);
-        }
-
-        else if (col.gameObject.tag == "jet" || col.gameObject.tag == "tank") {
+        if (col.gameObject.tag == "jet" || col.gameObject.tag == "tank") {
             PlaySound(SOUND_CRASH);
             GameObject expClone = GameObject.Instantiate(explosion, col.gameObject.transform.position,
                 Quaternion.identity);

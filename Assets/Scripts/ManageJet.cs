@@ -51,7 +51,6 @@ public class ManageJet : MonoBehaviour {
     private bool        chopperMoving = false;          // True if chopper is nearly still; used for swooping
     private GameObject  chopper;
     private GameObject[] missiles = new GameObject[2];  // Array of missiles attached to jet
-    public  GameObject  explosion;
     private AudioSource engineSound;
     private ParticleSystem.MainModule psMainLeftExhaust;  // Used to intensify jet exhaust during retreat
     private ParticleSystem.MainModule psMainRightExhaust;
@@ -285,15 +284,5 @@ public class ManageJet : MonoBehaviour {
         // Note that this will be true if the Scene camera can see it, so the jet may stay around longer in dev
         if (Mathf.Abs(transform.position.x - chopper.transform.position.x) > 100 && !GetComponent<Renderer>().isVisible)
             Destroy(gameObject, 1);
-    }
-
-    void OnCollisionEnter(Collision col) {
-        if (col.gameObject.tag == "chopper") {
-            GameObject expClone = GameObject.Instantiate(explosion,
-                col.gameObject.transform.position, Quaternion.identity);
-            Destroy(expClone, expClone.GetComponent<ParticleSystem>().main.duration);
-            Destroy(gameObject);
-            col.gameObject.GetComponent<ManageChopper>().Crash();
-        }
     }
 }
