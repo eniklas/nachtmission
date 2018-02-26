@@ -77,9 +77,10 @@ public class ManageTurret : MonoBehaviour {
 
         // Since we have a wide collider for the tank, we need to track who shot
         //  each bullet to prevent the tank from shooting itself
-        bulletClone.tag = "source:tank";
         bulletClone.GetComponent<Rigidbody>().useGravity = true;
         bulletClone.GetComponent<Rigidbody>().AddForce((turretMuzzle.transform.position -
             turretMuzzleTail.transform.position) * bulletSpeed, ForceMode.VelocityChange);
+        // Don't shoot ourselves
+        Physics.IgnoreCollision(bulletClone.GetComponent<Collider>(), transform.parent.GetComponent<Collider>(), true);
     }
 }

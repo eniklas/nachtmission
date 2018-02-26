@@ -244,8 +244,8 @@ public class ManageUI : MonoBehaviour {
         if (numChoppersLeft == 0) GameOver();
         else {
             chopper.GetComponent<ManageChopper>().initChopper();
-            // Destroy any bullets fired by chopper to avoid seeing them pass by on the next life
-            foreach (GameObject bullet in GameObject.FindGameObjectsWithTag("source:chopper"))
+            // Destroy any leftover bullets to avoid seeing them pass by on the next life
+            foreach (GameObject bullet in GameObject.FindGameObjectsWithTag("bullet"))
                 Destroy(bullet);
         }
     }

@@ -134,8 +134,9 @@ public class ManageDrone : MonoBehaviour {
             }
 
             GetComponents<AudioSource>()[SOUND_FIRE].Play();
-            bulletClone.tag = "source:drone";
             bulletClone.GetComponent<Rigidbody>().useGravity = true;
+            // Don't shoot ourselves
+            Physics.IgnoreCollision(bulletClone.GetComponent<Collider>(), GetComponent<Collider>(), true);
     }
 
     void PlaySound(int offset) {

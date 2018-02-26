@@ -55,8 +55,7 @@ public class ManageBullet : MonoBehaviour {
     }
 
     void OnCollisionEnter(Collision col) {
-        // TODO: use IgnoreCollision
-        if (col.gameObject.tag == "tank" && gameObject.tag != "source:tank") {
+        if (col.gameObject.tag == "tank") {
             PlayEffect(bigExplosion, col.gameObject.transform.position + new Vector3(0, 2, 0));
             PlaySound(SOUND_TANK_EXPLOSION);
             Destroy(col.gameObject);
@@ -68,17 +67,13 @@ public class ManageBullet : MonoBehaviour {
             Destroy(col.gameObject);
         }
 
-        // TODO: use IgnoreCollision
         else if (col.gameObject.tag == "drone") {
-            if (gameObject.tag != "source:drone") {
-                PlayEffect(bigExplosion, col.gameObject.transform.position);
-                PlaySound(SOUND_DRONE_EXPLOSION);
-                Destroy(col.gameObject);
-            }
+            PlayEffect(bigExplosion, col.gameObject.transform.position);
+            PlaySound(SOUND_DRONE_EXPLOSION);
+            Destroy(col.gameObject);
         }
 
-        // TODO: use IgnoreCollision
-        else if (col.gameObject.tag == "chopper" && gameObject.tag != "source:chopper") {
+        else if (col.gameObject.tag == "chopper") {
             PlayEffect(bigExplosion, col.gameObject.transform.position);
             PlaySound(SOUND_CHOPPER_HIT);
             col.gameObject.GetComponent<ManageChopper>().Crash();

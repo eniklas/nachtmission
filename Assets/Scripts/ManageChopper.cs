@@ -273,7 +273,9 @@ public class ManageChopper : MonoBehaviour {
 
         muzzleFlashPS.Play();
         GetComponents<AudioSource>()[SOUND_FIRE].Play();
-        bulletClone.tag = "source:chopper";
+        // Don't allow bullet to hit the chopper
+        foreach (Collider chopperCollider in GetComponents<Collider>())
+            Physics.IgnoreCollision(bulletClone.GetComponent<Collider>(), chopperCollider, true);
     }
 
     private void Pitch() {
