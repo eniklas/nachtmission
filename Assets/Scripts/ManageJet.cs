@@ -45,7 +45,7 @@ public class ManageJet : MonoBehaviour {
     private bool        isSwooping = false;
     private bool        isRetreating = false;
     private bool        isHeadingRight;                 // True if jet is heading to the right; false if heading left
-    private ManageChopper chopperScript;
+    private BoxCollider boxCollider;                    // Box Collider of jet
     private Rigidbody   chopperRbody;
     private float       chopperStillMaxSpeed;           // Max speed at which chopper is considered to be still
     private bool        chopperMoving = false;          // True if chopper is nearly still; used for swooping
@@ -57,14 +57,16 @@ public class ManageJet : MonoBehaviour {
     private ParticleSystem.MainModule psMainRightExhaust;
 
     void Awake() {
+        boxCollider = GetComponent<BoxCollider>();
+
         // Note that using GameObject.Find would always find the first
         //  missileLeft object, not necessarily the child of this jet
         missiles[0] = transform.Find("MissileLeft").gameObject;
         missiles[1] = transform.Find("MissileRight").gameObject;
 
+        // Ignore collisions with jet and chopper, and disable exhaust effect
         foreach (GameObject missile in missiles) {
-            // Ignore collisions with jet, and disable exhaust effect
-            Physics.IgnoreCollision(missile.GetComponent<BoxCollider>(), GetComponent<BoxCollider>());
+            Physics.IgnoreCollision(missile.GetComponent<BoxCollider>(), boxCollider);
             missile.transform.Find("MissileExhaust").gameObject.SetActive(false);
         }
 
@@ -76,7 +78,6 @@ public class ManageJet : MonoBehaviour {
 	void Start () {
 		chopper = GameObject.Find("Chopper");
 		chopperRbody = chopper.GetComponent<Rigidbody>();
-        chopperScript = chopper.GetComponent<ManageChopper>();
         enemyTerritoryBoundary = GameObject.Find("LeftRiverBoundary").transform.position.x;
         chopperStillMaxSpeed = GameObject.Find("Enemies").GetComponent<ManageEnemies>().chopperStillMaxSpeed;
 
@@ -101,6 +102,14 @@ public class ManageJet : MonoBehaviour {
         initialRoll = transform.eulerAngles.z;
         initialPitch = transform.eulerAngles.y;
         finalZPos = chopper.transform.position.z;
+
+        // Ignore collisions with chopper; re-enabled when retreating
+        foreach (BoxCollider chopperCollider in chopper.GetComponents<BoxCollider>()) {
+            Physics.IgnoreCollision(chopperCollider, boxCollider, true);
+
+            foreach (GameObject missile in missiles)
+                Physics.IgnoreCollision(chopperCollider, missile.GetComponent<BoxCollider>(), true);
+        }
 	}
 
 	void Update () {
@@ -196,15 +205,14 @@ public class ManageJet : MonoBehaviour {
             isHunting = false;
             isRetreating = false;
             isSwooping = true;
+
             // Match chopper speed if it's moving
             if (chopperMoving)
                 speed = 1.5f * chopperRbody.velocity.x;
 
             // Box collider across wings is long while hunting so it passes through Z=0, but
-            //  once it swoops we need to change the collider to match the actual wingspan
-            transform.GetComponent<BoxCollider>().size = new Vector3(7,
-                transform.GetComponent<BoxCollider>().size.y,
-                transform.GetComponent<BoxCollider>().size.z);
+            // once it swoops we need to change the collider to match the actual wingspan
+            boxCollider.size = new Vector3(7, boxCollider.size.y, boxCollider.size.z);
         }
 
         // If chopper is sufficiently below jet when it swoops, aim for SWOOP_DROP_DISTANCE units
@@ -227,7 +235,7 @@ public class ManageJet : MonoBehaviour {
     }
 
     void Attack() {
-        // Fire; detach missiles from jet, enable colliders and particle effects, and add force
+        // Fire; detach missiles from jet, enable particle effects, and add force
         foreach (GameObject missile in missiles) {
             missile.transform.parent = null;
             missile.transform.Find("MissileExhaust").gameObject.SetActive(true);   // Enable exhaust effect
@@ -237,6 +245,14 @@ public class ManageJet : MonoBehaviour {
                 missile.GetComponent<Rigidbody>().AddForce(Vector3.right * missileSpeed, ForceMode.VelocityChange);
             else
                 missile.GetComponent<Rigidbody>().AddForce(Vector3.left * missileSpeed, ForceMode.VelocityChange);
+        }
+
+        // Enable collisions with chopper
+        foreach (BoxCollider chopperCollider in chopper.GetComponents<BoxCollider>()) {
+            Physics.IgnoreCollision(chopperCollider, boxCollider, false);
+
+            foreach (GameObject missile in missiles)
+                Physics.IgnoreCollision(chopperCollider, missile.GetComponent<BoxCollider>(), false);
         }
 
         GetComponents<AudioSource>()[FIRE_SOUND_OFFSET].Play();
@@ -272,11 +288,10 @@ public class ManageJet : MonoBehaviour {
     }
 
     void OnCollisionEnter(Collision col) {
-        // Wide collider on jet makes it too easy to collide; don't collide before attack
-        if (col.gameObject.tag == "chopper" && isRetreating) {
-            GameObject expClone = GameObject.Instantiate(explosion, col.gameObject.transform.position,
-                Quaternion.identity);
-            Destroy(expClone, 3);   // Explosion lasts 3 secs
+        if (col.gameObject.tag == "chopper") {
+            GameObject expClone = GameObject.Instantiate(explosion,
+                col.gameObject.transform.position, Quaternion.identity);
+            Destroy(expClone, expClone.GetComponent<ParticleSystem>().main.duration);
             Destroy(gameObject);
             col.gameObject.GetComponent<ManageChopper>().Crash();
         }
