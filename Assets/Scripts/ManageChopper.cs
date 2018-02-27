@@ -37,8 +37,8 @@ public class ManageChopper : MonoBehaviour {
 
     private const float MAX_HSPEED = 50.0f;            // Max horizontal speed of chopper
     private const float MAX_VSPEED = 25.0f;            // Max vertical speed of chopper
-    private const float H_ACCELERATION = 6000.0f;        // Horizontal acceleration
-    private const float V_ACCELERATION = 4000.0f;        // vertical acceleration
+    private const float H_ACCELERATION = 6000.0f;      // Horizontal acceleration
+    private const float V_ACCELERATION = 4000.0f;      // vertical acceleration
     private const float SPEED_CRASH_FACTOR = 0.8f;     // Percentage of horizontal speed that will cause a crash
     private float       hVelocity;                     // Current horizontal velocity of the chopper
     public  float       minHeightAboveGround;
@@ -51,7 +51,7 @@ public class ManageChopper : MonoBehaviour {
     private float       hAxis;                         // Horizontal axis input
     private float       vAxis;                         // Vertical axis input
     private Rigidbody   rbody;                         // Rigidbody component of chopper
-    private RigidbodyConstraints rbodyConstraints; // Rigidbody constraints of chopper
+    private RigidbodyConstraints rbodyConstraints;     // Rigidbody constraints of chopper
 
     public bool         isOnGround;                    // Rotor blade uses this
     public bool         isOnRiver;                     // True if chopper is just above the river
@@ -298,13 +298,14 @@ public class ManageChopper : MonoBehaviour {
             return;
 
         // Level out faster when we're on the ground
-        if (isOnGround) pitchingTime += Time.deltaTime * 3;
-        else pitchingTime += Time.deltaTime;
-
         if (isOnGround) {
+            pitchingTime += Time.deltaTime * 3;
             isPitching = false;
             isLeveling = true;
+            // This allows landing when player hits the ground while not level
+            rbody.useGravity = true;
         }
+        else pitchingTime += Time.deltaTime;
 
         if (!isRotatingLeft && !isRotatingRight) {
             if (isPitching) {
@@ -325,6 +326,7 @@ public class ManageChopper : MonoBehaviour {
                     isLevel = true;
                     isLeveling = false;
                     pitch = 0;
+                    rbody.useGravity = false;
                 }
             }
         }
