@@ -13,7 +13,7 @@ using UnityEngine;
 public class ManageDrone : MonoBehaviour {
     private const float Z_POS = 0.0f;
     private const float SPEED_X = 5.0f;
-    private const float SPEED_Y = 2.5f;
+    private const float SPEED_Y = 2.0f;
     private const float BELT_SPEED = 2.5f;          // Speed the center belt rotates
     private const float BULLET_SPEED_X = 5.0f;
     private const float DAMPER_ZONE = 0.8f;
@@ -22,22 +22,26 @@ public class ManageDrone : MonoBehaviour {
     private const float MAX_CHOPPER_Y_OFFSET = 1.0f;
     private const float FIRING_FREQUENCY = 1.0f;    // How often drone fires
     private const float FIRING_RANGE = 30.0f;       // X distance from chopper to start firing
-    private const int SOUND_FIRE = 1;               // Offset (in Inspector) for firing sound (local to GameObject)
-    private const int SOUND_CRASH = 6;              // Offset for crash sound in Sounds prefab
+    private const int   POSITION_CORRECTION_DISTANCE_X = 100;
+    private const int   POSITION_CORRECTION_DISTANCE_Y = 10;
+    private const float POSITION_CORRECTION_TIME = 15.0f;
+    private const int   SOUND_FIRE = 1;             // Offset (in Inspector) for firing sound (local to GameObject)
+    private const int   SOUND_CRASH = 6;            // Offset for crash sound in Sounds prefab
     private float timeSinceFire = 0.0f;             // Time since drone last fired
+    private float timeSincePositionCorrection;      // Time since drone has corrected position to avoid chopper
     private float distanceX;                        // X distance between chopper and drone
     private float distanceY;                        // Y distance between chopper and drone
-    private bool isUsingLeftMuzzle = true;          // True to fire left, false to fire right
+    private bool  isUsingLeftMuzzle = true;         // True to fire left, false to fire right
     private GameObject leftMuzzle;
     private GameObject rightMuzzle;
     private ParticleSystem leftMuzzleFlashPS;
     private ParticleSystem rightMuzzleFlashPS;
     private GameObject belt;
     private GameObject chopper;
-    public GameObject bullet;
-    public GameObject bulletClone;
-    public GameObject explosion;
-    public GameObject sounds;
+    public  GameObject bullet;
+    public  GameObject bulletClone;
+    public  GameObject explosion;
+    public  GameObject sounds;
 
 	void Awake() {
 		leftMuzzle = transform.Find("LeftMuzzle").gameObject;
@@ -45,6 +49,8 @@ public class ManageDrone : MonoBehaviour {
         leftMuzzleFlashPS = transform.Find("LeftMuzzleFlash").gameObject.GetComponent<ParticleSystem>();
         rightMuzzleFlashPS = transform.Find("RightMuzzleFlash").gameObject.GetComponent<ParticleSystem>();
 		belt = transform.Find("Belt").gameObject;
+        // Allow immediate position correction
+        timeSincePositionCorrection = POSITION_CORRECTION_TIME + 1;
 	}
 
     void Start() {
@@ -54,11 +60,13 @@ public class ManageDrone : MonoBehaviour {
 	void Update () {
         transform.position = new Vector3(GetXPos(), GetYPos(), Z_POS);
 		timeSinceFire += Time.deltaTime;
+        timeSincePositionCorrection += Time.deltaTime;
 
         if (timeSinceFire >= FIRING_FREQUENCY &&
             (Mathf.Abs(transform.position.x - chopper.transform.position.x) <= FIRING_RANGE)) {
                 Fire();
-                isUsingLeftMuzzle = !isUsingLeftMuzzle; // Alternate firing side
+                // Alternate firing side
+                isUsingLeftMuzzle = !isUsingLeftMuzzle;
                 timeSinceFire = 0;
         }
 
@@ -89,7 +97,16 @@ public class ManageDrone : MonoBehaviour {
     private float GetYPos() {
         distanceY = transform.position.y - chopper.transform.position.y;
 
-        if (distanceY > MAX_CHOPPER_Y_OFFSET)
+        // If the drone is about to come on-screen and the chopper is going to crash into it,
+        // move the drone out of the way; otherwise it's too easy to collide with it
+        if (distanceX < POSITION_CORRECTION_DISTANCE_X &&
+            Mathf.Abs(distanceY) < POSITION_CORRECTION_DISTANCE_Y &&
+            timeSincePositionCorrection > POSITION_CORRECTION_TIME) {
+                timeSincePositionCorrection = 0;
+                return transform.position.y + (2 * POSITION_CORRECTION_DISTANCE_Y);
+        }
+
+        else if (distanceY > MAX_CHOPPER_Y_OFFSET)
             return transform.position.y - SPEED_Y * Time.deltaTime;
 
         else if (distanceY < -MAX_CHOPPER_Y_OFFSET)
