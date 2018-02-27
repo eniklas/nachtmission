@@ -17,10 +17,11 @@ Sounds courtesy of [freesound.org](https://freesound.org/). Thanks to:
 [kwahmah_02](https://freesound.org/people/kwahmah_02/): [swoosh39](https://freesound.org/people/kwahmah_02/sounds/269294/) ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))<br>
 [omar-alvarado](https://freesound.org/people/Omar%20Alvarado/): [expl1](https://freesound.org/people/Omar%20Alvarado/sounds/199725/) ([CC BY-NC 3.0](https://creativecommons.org/licenses/by-nc/3.0/))<br>
 [otisjames](https://freesound.org/people/OtisJames/): [thud](https://freesound.org/people/OtisJames/sounds/215162/) ([CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/))<br>
-[qubodup](https://freesound.org/people/qubodup/)<br>
+[qubodup](https://freesound.org/people/qubodup/):<br>
 * [Car Engine Loop](https://freesound.org/people/qubodup/sounds/147242/) ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))
 * [Driving Tank Engine](https://freesound.org/people/qubodup/sounds/187676/) ([CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/))
 * [Explosive 1 v3 [DOD 130303]](https://freesound.org/people/qubodup/sounds/182430/) ([CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/))
+
 [sancho82](https://freesound.org/people/Sancho82/): [Bum](https://freesound.org/people/Sancho82/sounds/78457/) ([CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/))<br>
 [smidoid](https://freesound.org/people/smidoid/): [jetengine loop](https://freesound.org/people/smidoid/sounds/128614/) ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))<br>
 [steveygos93](https://freesound.org/people/steveygos93/): [Explosion2](https://freesound.org/people/steveygos93/sounds/80401/) ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))<br>
