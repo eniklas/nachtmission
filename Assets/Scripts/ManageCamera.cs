@@ -38,7 +38,7 @@ public class ManageCamera : MonoBehaviour {
         chopperMinHeight = GameObject.Find("Terrain").gameObject.transform.position.y +
             chopper.GetComponent<ManageChopper>().minHeightAboveGround;
         // Chopper can go slightly above ceiling since we're not correcting the height if it does
-        chopperMaxHeight = GameObject.Find("Ceiling").gameObject.transform.position.y + 1;
+        chopperMaxHeight = GameObject.Find("Ceiling").gameObject.transform.position.y + 2;
         cameraMaxHeight = GameObject.Find("CameraCeiling").gameObject.transform.position.y;
         chopperMidpoint = (chopperMaxHeight - chopperMinHeight) / 2;
 

@@ -124,11 +124,15 @@ public class ManageChopper : MonoBehaviour {
     }
 
 	void FixedUpdate () {
-        fixedUpdateOTS = true;     // Required to prevent multiple calls to OnTriggerStay per frame
+        // Required to prevent multiple calls to OnTriggerStay per frame
+        fixedUpdateOTS = true;
 
         if (isCrashing) {
+            // Fall faster than gravity alone would allow
+            rbody.AddForce(Vector3.down * 15, ForceMode.Acceleration);
             Crash();
-            return;             // Don't do anything else if we're currently crashing
+            // Don't do anything else if we're currently crashing
+            return;
         }
 
         hAxis = Input.GetAxis("Horizontal");
@@ -368,13 +372,13 @@ public class ManageChopper : MonoBehaviour {
         else                               transform.eulerAngles = new Vector3(0, RIGHT_ANGLE, 0);
     }
 
-    // TODO: fall faster
     public void Crash() {
         timeCrashing += Time.deltaTime;
 
         if (!isCrashing) {          // First time through; do one-time tasks
             isCrashing = true;
             timeCrashing = 0.0f;
+            PlayEffect(bigExplosion, transform.position);
 
             // Stop tanks from firing and moving
             foreach (GameObject turret in GameObject.FindGameObjectsWithTag("turret"))
@@ -420,7 +424,7 @@ public class ManageChopper : MonoBehaviour {
             PlaySound(SOUND_CHOPPER_EXPLOSION);
         }
 
-        if (timeCrashing >= TIME_TO_CRASH) {
+        if (timeCrashing >= TIME_TO_CRASH && !uiScript.gameOver) {
             // Don't do this if it's the last chopper crashing
             if (uiScript.numChoppersLeft > 1) {
                 isCrashing = false;
