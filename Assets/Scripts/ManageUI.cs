@@ -38,9 +38,9 @@ public class ManageUI : MonoBehaviour {
     private float        blinkFreq = 1.0f;              // How fast text blinks in secs
     private float        timeSinceBlink = 0.0f;
     private const float  TANK_SPAWN_PERCENTAGE = 0.0f;  // Start spawning tanks this far into the game
-    private const float  JET_SPAWN_PERCENTAGE = 0.0f;  // Start spawning jets this far into the game
-//    private const float  JET_SPAWN_PERCENTAGE = 0.25f;  // Start spawning jets this far into the game
-    private const float  DRONE_SPAWN_PERCENTAGE = 0.5f; // Start spawning drones this far into the game
+    private const float  JET_SPAWN_PERCENTAGE = 0.25f;  // Start spawning jets this far into the game
+//    private const float  DRONE_SPAWN_PERCENTAGE = 0.5f; // Start spawning drones this far into the game
+    private const float  DRONE_SPAWN_PERCENTAGE = 0f; // Start spawning drones this far into the game
     private bool         tanksActive = false;
     private bool         jetsActive = false;
     private bool         dronesActive = false;
@@ -273,31 +273,23 @@ public class ManageUI : MonoBehaviour {
                                                "\nRescued: " + prisonersRescued +
                                                "\nKilled: " + prisonersKilled);
 
-        // FIXME: when using 6 prisons with 5 prisoners each, I ended up with -2 captive somehow
-        //  I've also seen lives = -1 on game over once
         if (prisonersRescued + prisonersKilled == prisonersTotal) GameOver();
 
         // Spawn additional enemies later in the game
         if (!tanksActive &&
             (float) (prisonersRescued + prisonersKilled) >= (float) prisonersTotal * TANK_SPAWN_PERCENTAGE) {
-                Debug.Log("Activating tanks. Percentage complete = " +
-                    (float) (prisonersRescued + prisonersKilled) / (float) prisonersTotal);
                 tanksActive = true;
                 enemyScript.IntroduceTanks();
         }
 
         if (!jetsActive &&
             (float) (prisonersRescued + prisonersKilled) >= (float) prisonersTotal * JET_SPAWN_PERCENTAGE) {
-                Debug.Log("Activating jets. Percentage complete = " +
-                    (float) (prisonersRescued + prisonersKilled) / (float) prisonersTotal);
                 jetsActive = true;
                 enemyScript.IntroduceJets();
         }
 
         if (!dronesActive &&
             (float) (prisonersRescued + prisonersKilled) >= (float) prisonersTotal * DRONE_SPAWN_PERCENTAGE) {
-                Debug.Log("Activating drones. Percentage complete = " +
-                    (float) (prisonersRescued + prisonersKilled) / (float) prisonersTotal);
                 dronesActive = true;
                 enemyScript.IntroduceDrones();
         }

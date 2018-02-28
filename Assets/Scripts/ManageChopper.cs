@@ -486,7 +486,6 @@ public class ManageChopper : MonoBehaviour {
                     timeSinceLastUnload += Time.deltaTime;
 
                     // FIXME: prisoners unload slower if facing left/right vs. forward
-                    // FIXME: probably unloading at double speed due to having 2 colliders on chopper
                     if (timeSinceLastUnload >= prisonerUnloadFreq) {
                         GetComponents<AudioSource>()[SOUND_PRISONER_BOARD].Play();
                         GameObject.Instantiate(prisoner, transform.position + new Vector3(2, -1.35f, 0),
@@ -546,10 +545,7 @@ public class ManageChopper : MonoBehaviour {
     }
 
     void OnCollisionExit(Collision col) {
-        if (col.gameObject.tag == "terrain") {
-            // Probably not needed, but just in case player only lands for one frame and OCS is called before OCE
-    //        justLanded = false;
+        if (col.gameObject.tag == "terrain")
             isOnGround = false;
-        }
     }
 }

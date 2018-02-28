@@ -15,11 +15,12 @@ public class ManageEnemies : MonoBehaviour {
     private float leftBoundary;                         // X position of left boundary
     private float ceiling;                              // Y position of top boundary
     private float ground;                               // Y position of bottom boundary
-    private const float tankSpawnRate = 15.0f;          // Seconds between potential tank spawns
+    private const float tankSpawnRate = 20.0f;          // Seconds between potential tank spawns
     private const float jetSpawnRate = 15.0f;           // Seconds between potential jet spawns
-    private const float droneSpawnRate = 15.0f;         // Seconds between potential drone spawns
+//    private const float droneSpawnRate = 60.0f;         // Seconds between potential drone spawns
+    private const float droneSpawnRate = 5.0f;         // Seconds between potential drone spawns
     private const int TANK_SPAWN_DISTANCE_MIN = 50;     // Min distance from chopper to spawn a tank
-    private const int TANK_SPAWN_DISTANCE_MAX = 150;    // Max distance from chopper to spawn a tank
+    private const int TANK_SPAWN_DISTANCE_MAX = 300;    // Max distance from chopper to spawn a tank
     private const float TANK_SPAWN_POS_Y = 6.3f;        // Y position to place tanks
     private const int TANK_SPAWN_POS_Z = -5;            // Z position to place tanks
     private const int JET_SPAWN_DISTANCE_X = 100;       // How far left/right of chopper to spawn jets
@@ -57,31 +58,26 @@ public class ManageEnemies : MonoBehaviour {
     }
 
     void SpawnTank() {
-        // FIXME: ground is 0.6 units too high for tanks. Give them weight, spawn them above ground, and let them fall
         // Spawn a new tank if the chopper is to the left of the river and there aren't enough tanks already
         if (chopper.transform.position.x < rightBoundary &&
             GameObject.FindGameObjectsWithTag("tank").Length < MAX_TANKS) {
 
             // Spawn to the left if the coin flip comes out that way, or if the chopper is too close to the river
             if (rightBoundary - chopper.transform.position.x < TANK_SPAWN_DISTANCE_MAX ||
-                Random.Range(0, 2) == 0) {    // Spawn to the left at a random X position
+                Random.Range(0, 2) == 0)
                 GameObject.Instantiate(tank,
                     new Vector3(chopper.transform.position.x -
                         Random.Range(TANK_SPAWN_DISTANCE_MIN, TANK_SPAWN_DISTANCE_MAX),
                         TANK_SPAWN_POS_Y,
                         TANK_SPAWN_POS_Z),
                         Quaternion.identity);
-                Debug.Log("Spawning tank to the left.");
-            }
-            else {
+            else
                 GameObject.Instantiate(tank,
                     new Vector3(chopper.transform.position.x +
                         Random.Range(TANK_SPAWN_DISTANCE_MIN, TANK_SPAWN_DISTANCE_MAX),
                         TANK_SPAWN_POS_Y,
                         TANK_SPAWN_POS_Z),
                         Quaternion.identity);
-                Debug.Log("Spawning tank to the right.");
-            }
         }
     }
 
@@ -89,22 +85,18 @@ public class ManageEnemies : MonoBehaviour {
         // Only spawn a jet if the chopper is in enemy territory; spawn just off the screen to the left
         if (chopper.transform.position.x < rightBoundary) {
             if (chopper.GetComponent<Rigidbody>().velocity.x > chopperStillMaxSpeed &&
-                rightBoundary - chopper.transform.position.x > JET_SPAWN_DISTANCE_X) {
+                rightBoundary - chopper.transform.position.x > JET_SPAWN_DISTANCE_X)
                     GameObject.Instantiate(jet,
                         new Vector3(chopper.transform.position.x + JET_SPAWN_DISTANCE_X,
                                     chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
                                     JET_SPAWN_POS_Z),
                                     Quaternion.identity);
-                Debug.Log("Spawning jet to the right.");
-            }
-            else {
+            else
                 GameObject.Instantiate(jet,
                     new Vector3(chopper.transform.position.x - JET_SPAWN_DISTANCE_X,
                                 chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
                                 JET_SPAWN_POS_Z),
                                 Quaternion.identity);
-                Debug.Log("Spawning jet to the left.");
-            }
         }
     }
 
@@ -112,25 +104,21 @@ public class ManageEnemies : MonoBehaviour {
         if (GameObject.FindGameObjectsWithTag("drone").Length < MAX_DRONES) {
             // Don't want to spawn in view; randomly choose whether to spawn to the left
             //  or right, but force left if the chopper is too close to the river
-            if (Random.Range(0, 2) == 0 || rightBoundary - chopper.transform.position.x < DRONE_SPAWN_DISTANCE_X) {
+            if (Random.Range(0, 2) == 0 || rightBoundary - chopper.transform.position.x < DRONE_SPAWN_DISTANCE_X)
                 GameObject.Instantiate(drone,
                     new Vector3(Random.Range(leftBoundary - DRONE_SPAWN_DISTANCE_X,
                                     chopper.transform.position.x - DRONE_SPAWN_DISTANCE_X),
                                 Random.Range(ground, ceiling),
                                 DRONE_SPAWN_POS_Z),
                                 Quaternion.identity);
-                Debug.Log("Spawning drone to the left.");
-            }
 
             // Spawn to the right as long as it's not past the river
-            else {
+            else
                 GameObject.Instantiate(drone,
                 new Vector3(Random.Range(chopper.transform.position.x + DRONE_SPAWN_DISTANCE_X, rightBoundary),
                             Random.Range(ground, ceiling),
                             DRONE_SPAWN_POS_Z),
                             Quaternion.identity);
-                Debug.Log("Spawning drone to the right.");
-            }
         }
     }
 }

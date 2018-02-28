@@ -22,7 +22,8 @@ public class ManageDrone : MonoBehaviour {
     private const float MAX_CHOPPER_Y_OFFSET = 1.0f;
     private const float FIRING_FREQUENCY = 1.0f;    // How often drone fires
     private const float FIRING_RANGE = 30.0f;       // X distance from chopper to start firing
-    private const int   POSITION_CORRECTION_DISTANCE_X = 100;
+    private const int   POSITION_CORRECTION_DISTANCE_X_MIN = 60;
+    private const int   POSITION_CORRECTION_DISTANCE_X_MAX = 100;
     private const int   POSITION_CORRECTION_DISTANCE_Y = 10;
     private const float POSITION_CORRECTION_TIME = 15.0f;
     private const int   SOUND_FIRE = 1;             // Offset (in Inspector) for firing sound (local to GameObject)
@@ -99,7 +100,8 @@ public class ManageDrone : MonoBehaviour {
 
         // If the drone is about to come on-screen and the chopper is going to crash into it,
         // move the drone out of the way; otherwise it's too easy to collide with it
-        if (distanceX < POSITION_CORRECTION_DISTANCE_X &&
+        if (distanceX < POSITION_CORRECTION_DISTANCE_X_MAX &&
+            distanceX > POSITION_CORRECTION_DISTANCE_X_MIN &&
             Mathf.Abs(distanceY) < POSITION_CORRECTION_DISTANCE_Y &&
             timeSincePositionCorrection > POSITION_CORRECTION_TIME) {
                 timeSincePositionCorrection = 0;
