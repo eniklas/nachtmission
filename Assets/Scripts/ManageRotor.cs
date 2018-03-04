@@ -81,8 +81,8 @@ public class ManageRotor : MonoBehaviour {
         if (spinningUp) Spinup();
         else if (spinningDown) Spindown();
 
-        if (isTailRotor) { transform.Rotate(-Vector3.forward, speed * Time.deltaTime); }
-        else { transform.Rotate(Vector3.up, speed * Time.deltaTime); }
+        if (isTailRotor) transform.Rotate(Vector3.back, speed * Time.deltaTime);
+        else transform.Rotate(Vector3.up, speed * Time.deltaTime);
 	}
 
     // Spins up the rotor blade

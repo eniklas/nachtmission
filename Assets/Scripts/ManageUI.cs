@@ -13,45 +13,46 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ManageUI : MonoBehaviour {
-    private const int    NUM_CHOPPERS = 3;              // Total lives
-    private const float  CREDITS_SCROLL_SPEED = 80;     // Speed that credits scroll up the screen
-    private const float  CREDITS_EXIT_FACTOR = 1.6f;    // Stop credits when they reach this factor of screen height
-    private Vector3      creditsStartPosition;          // Position of the credits (bottom of screen)
-    private bool         isScrollingCredits = false;    // True if the credits are being shown
-    public int           numChoppersLeft;               // Lives left
-    private int          prisonersTotal;                // Total number of prisoners to rescue
-    private int          prisonersCaptive;              // Number of prisoners to rescue
-    public int           prisonersRescued = 0;          // Number returned to base
-    public int           prisonersOnboard = 0;          // Number on board the chopper
-    public int           prisonersKilled = 0;           // Number killed
-    private int          prisonersPerPrison;
-    private GameObject   scoreText;
-    private GameObject   gameOverText;
-    private GameObject   instructionText;
-    private GameObject   howToPlayText;
-    private GameObject   creditsText;
-    private GameObject   versionText;
-    private GameObject   chopper;
+    private const int     NUM_CHOPPERS = 3;             // Total lives
+    private const float   CREDITS_SCROLL_SPEED = 80;    // Speed that credits scroll up the screen
+    private const float   CREDITS_EXIT_FACTOR = 1.6f;   // Stop credits when they reach this factor of screen height
+    private Vector3       creditsStartPosition;         // Position of the credits (bottom of screen)
+    private bool          isScrollingCredits = false;   // True if the credits are being shown
+    public int            numChoppersLeft;              // Lives left
+    private int           prisonersTotal;               // Total number of prisoners to rescue
+    private int           prisonersCaptive;             // Number of prisoners to rescue
+    public int            prisonersRescued = 0;         // Number returned to base
+    public int            prisonersOnboard = 0;         // Number on board the chopper
+    public int            prisonersKilled = 0;          // Number killed
+    private int           prisonersPerPrison;
+    private GameObject    scoreText;
+    private GameObject    gameOverText;
+    private GameObject    instructionText;
+    private GameObject    howToPlayText;
+    private GameObject    creditsText;
+    private GameObject    versionText;
+    private GameObject    chopper;
     private ManageEnemies enemyScript;
-    private ManageCamera cameraScript;
-    public  bool         gameOver = false;
-    private float        blinkFreq = 1.0f;              // How fast text blinks in secs
-    private float        timeSinceBlink = 0.0f;
-    private const float  TANK_SPAWN_PERCENTAGE = 0.0f;  // Start spawning tanks this far into the game
-    private const float  JET_SPAWN_PERCENTAGE = 0.25f;  // Start spawning jets this far into the game
-    private const float  DRONE_SPAWN_PERCENTAGE = 0.5f; // Start spawning drones this far into the game
-    private bool         tanksActive = false;
-    private bool         jetsActive = false;
-    private bool         dronesActive = false;
-    private bool         isShowingMenu = true;          // True if the game is paused/showing menu
-    private bool         isShowingHowToPlay = false;    // True if we're displaying the How to Play text
-    public  bool         firstGameLaunch = true;        // False if the user has clicked New Game
-    private GameObject   resumeGameButton;
-    private GameObject   menu;
-    private GameObject   terrain;
-    private GameObject[] terrains;
-    public  GameObject   prisonDamaged;
-    public  float        timeSinceMenuClear = 0.0f;     // Time since menu has disappeared (to prevent unwanted firing)
+    private ManageCamera  cameraScript;
+    private ManageChopper chopperScript;
+    public  bool          gameOver = false;
+    private float         blinkFreq = 1.0f;              // How fast text blinks in secs
+    private float         timeSinceBlink = 0.0f;
+    private const float   TANK_SPAWN_PERCENTAGE = 0.0f;  // Start spawning tanks this far into the game
+    private const float   JET_SPAWN_PERCENTAGE = 0.25f;  // Start spawning jets this far into the game
+    private const float   DRONE_SPAWN_PERCENTAGE = 0.5f; // Start spawning drones this far into the game
+    private bool          tanksActive = false;
+    private bool          jetsActive = false;
+    private bool          dronesActive = false;
+    private bool          isShowingMenu = true;          // True if the game is paused/showing menu
+    private bool          isShowingHowToPlay = false;    // True if we're displaying the How to Play text
+    public  bool          firstGameLaunch = true;        // False if the user has clicked New Game
+    private GameObject    resumeGameButton;
+    private GameObject    menu;
+    private GameObject    terrain;
+    private GameObject[]  terrains;
+    public  GameObject    prisonDamaged;
+    public  float         timeSinceMenuClear = 0.0f;     // Time since menu has disappeared (to prevent unwanted firing)
 
 	void Awake () {
         numChoppersLeft = NUM_CHOPPERS;
@@ -69,6 +70,7 @@ public class ManageUI : MonoBehaviour {
 
 	void Start () {
         chopper = GameObject.Find("Chopper");
+        chopperScript = chopper.GetComponent<ManageChopper>();
         cameraScript = GameObject.Find("Main Camera").GetComponent<ManageCamera>();
         enemyScript = GameObject.Find("Enemies").GetComponent<ManageEnemies>();
 
@@ -101,8 +103,7 @@ public class ManageUI : MonoBehaviour {
         howToPlayText.GetComponent<Text>().text =
             howToPlayText.GetComponent<Text>().text.Replace("NUM_PRISONERS", prisonersPerPrison.ToString());
         howToPlayText.GetComponent<Text>().text =
-            howToPlayText.GetComponent<Text>().text.Replace("CAPACITY",
-            chopper.GetComponent<ManageChopper>().capacity.ToString());
+            howToPlayText.GetComponent<Text>().text.Replace("CAPACITY", chopperScript.capacity.ToString());
 
         UpdateScore();
 	}
@@ -241,7 +242,7 @@ public class ManageUI : MonoBehaviour {
 
         if (numChoppersLeft == 0) GameOver();
         else {
-            chopper.GetComponent<ManageChopper>().initChopper();
+            chopperScript.initChopper();
             // Destroy any leftover bullets to avoid seeing them pass by on the next life
             foreach (GameObject bullet in GameObject.FindGameObjectsWithTag("bullet"))
                 Destroy(bullet);
@@ -250,7 +251,10 @@ public class ManageUI : MonoBehaviour {
 
     void GameOver() {
         gameOver = true;
-        chopper.GetComponent<ManageChopper>().enabled = false;   // Disable chopper control
+        // Disable rotors and chopper control
+        chopperScript.enabled = false;
+        chopper.transform.Find("ChopperRotor").GetComponent<ManageRotor>().enabled = false;
+        chopper.transform.Find("ChopperTailRotor").GetComponent<ManageRotor>().enabled = false;
 
         if (prisonersRescued == prisonersTotal) {
             // Player rescued all prisoners without losing any choppers
