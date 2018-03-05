@@ -170,12 +170,11 @@ public class ManageChopper : MonoBehaviour {
 
 		if (vAxis != 0) {
             // Ground collision is handled in OnCollisionEnter/Stay
-            if ((vAxis < 0 && isOnRiver && !isCrashing) || (vAxis > 0 && transform.position.y >= ceiling))
-                rbody.AddForce(Vector3.down * rbody.velocity.y, ForceMode.VelocityChange);
+            if ((vAxis < 0 && isOnRiver) || (vAxis > 0 && transform.position.y >= ceiling))
+                rbody.velocity = new Vector3(rbody.velocity.x, 0, 0);
 
             else if ((vAxis < 0 && rbody.velocity.y > -MAX_VSPEED) || (vAxis > 0 && rbody.velocity.y < MAX_VSPEED))
                 rbody.AddForce(vAxis * V_ACCELERATION * Vector3.up, ForceMode.Force);
-
         }
     }
 
@@ -377,7 +376,8 @@ public class ManageChopper : MonoBehaviour {
 
         if (!isCrashing) {          // First time through; do one-time tasks
             isCrashing = true;
-            timeCrashing = 0.0f;
+            timeCrashing = 0;
+            hVelocity = 0;          // Avoids immediate crash after reset with initChopper()
             PlayEffect(bigExplosion, transform.position);
 
             // Stop tanks from firing and moving
@@ -519,7 +519,8 @@ public class ManageChopper : MonoBehaviour {
             if (!isCrashing) {
                 if (transform.position.x < leftRiverBoundary || transform.position.x > rightRiverBoundary) {
                     // Crash if player hits ground when going too fast
-                    if (Mathf.Abs(hVelocity) > SPEED_CRASH_FACTOR * MAX_HSPEED) Crash();
+                    if (Mathf.Abs(hVelocity) > SPEED_CRASH_FACTOR * MAX_HSPEED)
+                        Crash();
                     else {
                         // Will only be true for this frame; used to detect if we've landed on a prisoner
                         justLanded = true;

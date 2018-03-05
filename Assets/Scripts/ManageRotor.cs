@@ -20,9 +20,9 @@ public class ManageRotor : MonoBehaviour {
     private const float TIME_TO_SPIN_DOWN = 6.0f;   // Time it takes rotor to spin down from MAX_SPEED
     private float speed;                            // Current speed of rotor
     private float rotorSpinTime;                    // Time rotor has been spinning up/down
-    private bool  spinningUp = false;               // Whether rotor is currently spinning up
-    private bool  spinningDown = false;             // Whether rotor is currently spinning down
-    private bool  isCrashing = false;               // Whether chopper is crashing
+    private bool  spinningUp;                       // Whether rotor is currently spinning up
+    private bool  spinningDown;                     // Whether rotor is currently spinning down
+    private bool  isCrashing;                       // Whether chopper is crashing
     private bool  isTailRotor = false;              // Whether this is the main rotor or tail rotor
     private AudioSource rotorSound;
     private const float MAX_SOUND_PITCH = 0.75f;    // Pitch of rotor sound when rotor is fully spun up
@@ -48,7 +48,18 @@ public class ManageRotor : MonoBehaviour {
     }
 
 	void Update () {
-        if (speed < MAX_SPEED && !spinningUp && !chopperScript.isOnGround) {
+        // Crashing; spin down rotor to zero
+        if (chopperScript.isCrashing && !isCrashing) {
+            isCrashing = true;
+            minSpeed = MIN_SPEED_CRASHING;
+            spinningUp = false;
+            spinningDown = true;
+        }
+
+        // Crash is done; reset
+        else if (!chopperScript.isCrashing && isCrashing) Awake();
+
+        else if (speed < MAX_SPEED && !spinningUp && !chopperScript.isOnGround) {
             // Check initial speed when we start to spin up
             rotorSpinTime = TIME_TO_SPIN_UP * (speed - minSpeed) / (MAX_SPEED - minSpeed);
 
@@ -63,17 +74,6 @@ public class ManageRotor : MonoBehaviour {
             spinningDown = true;
             spinningUp = false;
         }
-
-        // Crashing; spin down rotor to zero
-        if (chopperScript.isCrashing && !isCrashing) {
-            isCrashing = true;
-            minSpeed = MIN_SPEED_CRASHING;
-            spinningUp = false;
-            spinningDown = true;
-        }
-
-        // Crash is done; reset
-        else if (!chopperScript.isCrashing && isCrashing) Awake();
 
         // Change pitch of rotor sound when changing speed
         if (!isTailRotor && (spinningUp || spinningDown)) rotorSound.pitch = MAX_SOUND_PITCH * (speed / MAX_SPEED);
