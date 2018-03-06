@@ -4,7 +4,7 @@ Nachtmission: a 2.5D shooter game made with Unity.
 
 ## Getting Started
 
-Install Unity from https://unity3d.com and import the project. The game was developed with Unity version 2017.1.0f3; using a newer version may cause some things to break.
+Install Unity from https://unity3d.com and import the project. The game was developed with Unity version 2017.3.1f1; using a newer version may cause some things to break.
 
 ## Built With
 
