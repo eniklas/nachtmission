@@ -20,10 +20,12 @@ public class ManageJet : MonoBehaviour {
     private float       finalRollAngle;                 // Z rotation at end of swoop
     private float       rollTime = 0.0f;                // How long jet has been rolling
     private float       roll;                           // Current roll angle
-    private const float TIME_TO_SWOOP = 1.2f;           // How long it takes to swoop
+    private float       timeToSwoop = 1.2f;             // How long it takes to swoop
     private float       finalSwoopAngle;                // Final angle about Y after swooping
-    private const float SWOOP_DROP_DISTANCE = 5.0f;     // Drop this far while swooping
+    private float       swoopDropDistance = 5.0f;       // Drop this far while swooping
     private const float SWOOP_CHOPPER_DISTANCE = 20.0f; // X distance past chopper to swoop
+    private const float HEAD_ON_CHOPPER_DISTANCE = 50.0f; // X distance ahead of chopper to swoop for head-on attacks
+    private const int   HEAD_ON_ATTACK_CHANCE = 10;     // Chance of a head-on attack is 1/this value
     private float       swoopTime = 0.0f;               // How long jet has been swooping
     private float       swoopRotation = 0.0f;           // Current rotation about Y
     private float       initialYPos;                    // Initial Y position
@@ -45,6 +47,7 @@ public class ManageJet : MonoBehaviour {
     private bool        isSwooping = false;
     private bool        isRetreating = false;
     private bool        isHeadingRight;                 // True if jet is heading to the right; false if heading left
+    private bool        isSwoopingHeadOn = false;       // True for a head-on attack
     private BoxCollider boxCollider;                    // Box Collider of jet
     private Rigidbody   chopperRbody;
     private float       chopperStillMaxSpeed;           // Max speed at which chopper is considered to be still
@@ -63,7 +66,7 @@ public class ManageJet : MonoBehaviour {
         missiles[0] = transform.Find("MissileLeft").gameObject;
         missiles[1] = transform.Find("MissileRight").gameObject;
 
-        // Ignore collisions with jet and chopper, and disable exhaust effect
+        // Ignore collisions with jet and missiles, and disable exhaust effect
         foreach (GameObject missile in missiles) {
             Physics.IgnoreCollision(missile.GetComponent<BoxCollider>(), boxCollider);
             missile.transform.Find("MissileExhaust").gameObject.SetActive(false);
@@ -72,11 +75,18 @@ public class ManageJet : MonoBehaviour {
         psMainLeftExhaust = transform.Find("JetExhaustLeft").GetComponent<ParticleSystem>().main;
         psMainRightExhaust = transform.Find("JetExhaustRight").GetComponent<ParticleSystem>().main;
         engineSound = GetComponents<AudioSource>()[ENGINE_SOUND_OFFSET];
+
+        // Decide if we're going to attack head-on
+        if (Random.Range(0, HEAD_ON_ATTACK_CHANCE) == 0) {
+            isSwoopingHeadOn = true;
+            // Shorter swoop (roll) time for head-on attacks
+            timeToSwoop = 0.75f;
+        }
     }
 
-	void Start () {
-		chopper = GameObject.Find("Chopper");
-		chopperRbody = chopper.GetComponent<Rigidbody>();
+    void Start () {
+        chopper = GameObject.Find("Chopper");
+        chopperRbody = chopper.GetComponent<Rigidbody>();
         enemyTerritoryBoundary = GameObject.Find("LeftRiverBoundary").transform.position.x;
         chopperStillMaxSpeed = GameObject.Find("Enemies").GetComponent<ManageEnemies>().chopperStillMaxSpeed;
 
@@ -109,18 +119,18 @@ public class ManageJet : MonoBehaviour {
             foreach (GameObject missile in missiles)
                 Physics.IgnoreCollision(chopperCollider, missile.GetComponent<BoxCollider>(), true);
         }
-	}
+    }
 
-	void Update () {
+    void Update () {
         transform.position = new Vector3(GetXPos(), GetYPos(), GetZPos());
         // Could also use a finite state machine for this
         if (isHunting) Hunt();
         else if (isSwooping) Swoop();
         else if (isRetreating) Retreat();
-	}
+    }
 
     private float GetXPos() {
-        if (isSwooping) {
+        if (isSwooping && !isSwoopingHeadOn) {
             accelerationTime += Time.deltaTime;
 
             if (chopperMoving) {
@@ -131,12 +141,12 @@ public class ManageJet : MonoBehaviour {
             }
             else acceleration = 0;
 
-            if (swoopTime < TIME_TO_SWOOP / 2)
-                return transform.position.x + ((TIME_TO_SWOOP / 2) - swoopTime) * Time.deltaTime * speed +
+            if (swoopTime < timeToSwoop / 2)
+                return transform.position.x + ((timeToSwoop / 2) - swoopTime) * Time.deltaTime * speed +
                     (acceleration * speed * Time.deltaTime);
 
             else
-                return transform.position.x - (swoopTime - (TIME_TO_SWOOP / 2)) * Time.deltaTime * speed +
+                return transform.position.x - (swoopTime - (timeToSwoop / 2)) * Time.deltaTime * speed +
                     (acceleration * speed * Time.deltaTime);
         }
 
@@ -144,7 +154,8 @@ public class ManageJet : MonoBehaviour {
     }
 
     private float GetYPos() {
-        if (isSwooping) return transform.position.y - Time.deltaTime / TIME_TO_SWOOP * (initialYPos - finalYPos);
+        if (isSwooping)
+            return transform.position.y - Time.deltaTime / timeToSwoop * (initialYPos - finalYPos);
 
         else if (isRetreating && retreatTime >= RETREAT_TIME_TO_ASCEND)
             // Use retreat time to accelerate lift
@@ -154,47 +165,52 @@ public class ManageJet : MonoBehaviour {
     }
 
     private float GetZPos() {
-        if (isSwooping) return initialZPos - (swoopTime / TIME_TO_SWOOP) * (initialZPos - finalZPos);
+        if (isSwooping) return initialZPos - (swoopTime / timeToSwoop) * (initialZPos - finalZPos);
         else return transform.position.z;
     }
 
     void Hunt() {
         // Fly a bit further past the chopper if it's relatively still, so the chopper will get
         //  shot down if it doesn't react to the swooping jet, whether it's moving or not
-		if (isHeadingRight &&
-           ((transform.position.x > chopper.transform.position.x + (SWOOP_CHOPPER_DISTANCE / 2) &&
-            chopperMoving) ||
-		   (transform.position.x > chopper.transform.position.x + SWOOP_CHOPPER_DISTANCE &&
-            !chopperMoving)) ||
-
-		   (!isHeadingRight &&
-           ((transform.position.x < chopper.transform.position.x - (SWOOP_CHOPPER_DISTANCE / 2) &&
-            chopperMoving) ||
-		   (transform.position.x < chopper.transform.position.x - SWOOP_CHOPPER_DISTANCE &&
-            !chopperMoving)))) {
-                isHeadingRight = !isHeadingRight;   // Change direction
-
+        if (isSwoopingHeadOn)
+        {
+            if ((isHeadingRight && (transform.position.x > chopper.transform.position.x - HEAD_ON_CHOPPER_DISTANCE)) ||
+                (!isHeadingRight && (transform.position.x < chopper.transform.position.x + HEAD_ON_CHOPPER_DISTANCE)))
+            {
                 if (Mathf.Abs(chopperRbody.velocity.x) > chopperStillMaxSpeed)
                     chopperMoving = true;
 
                 Swoop();
+            }
+        }
+
+        else if ((isHeadingRight && (transform.position.x > chopper.transform.position.x + SWOOP_CHOPPER_DISTANCE)) ||
+            (!isHeadingRight && (transform.position.x < chopper.transform.position.x - SWOOP_CHOPPER_DISTANCE)))
+        {
+            isHeadingRight = !isHeadingRight;   // Change direction
+
+            if (Mathf.Abs(chopperRbody.velocity.x) > chopperStillMaxSpeed)
+                chopperMoving = true;
+
+            Swoop();
         }
 
         // If we end up right of the river, take off eh (should only happen while hunting)
-        if (transform.position.x > enemyTerritoryBoundary) Retreat();
+        if (transform.position.x > enemyTerritoryBoundary)
+            Retreat();
     }
 
     void Roll() {
         rollTime += Time.deltaTime;
 
-        if (rollTime >= TIME_TO_SWOOP)
+        if (rollTime >= timeToSwoop)
             if (isHeadingRight)
                 transform.Rotate(Vector3.forward, 1.5f, Space.Self);
             else
                 // TODO: understand why -1.5f works
                 transform.Rotate(Vector3.forward, -1.5f, Space.Self);
         else {
-            roll = Time.deltaTime / TIME_TO_SWOOP * (initialRoll - finalRollAngle);
+            roll = Time.deltaTime / timeToSwoop * (initialRoll - finalRollAngle);
             transform.Rotate(Vector3.forward, roll, Space.Self);
         }
     }
@@ -207,28 +223,33 @@ public class ManageJet : MonoBehaviour {
 
             // Match chopper speed if it's moving
             if (chopperMoving)
-                speed = 1.5f * chopperRbody.velocity.x;
-
+            {
+                if (isSwoopingHeadOn)
+                    speed = 0.8f * chopperRbody.velocity.x;
+                else
+                    speed = 1.5f * chopperRbody.velocity.x;
+            }
             // Box collider across wings is long while hunting so it passes through Z=0, but
             // once it swoops we need to change the collider to match the actual wingspan
             boxCollider.size = new Vector3(7, boxCollider.size.y, boxCollider.size.z);
         }
 
-        // If chopper is sufficiently below jet when it swoops, aim for SWOOP_DROP_DISTANCE units
-        //  above chopper; otherwise, just drop SWOOP_DROP_DISTANCE units from initial height
-        if (transform.position.y >= chopper.transform.position.y + SWOOP_DROP_DISTANCE)
-            finalYPos = transform.position.y - SWOOP_DROP_DISTANCE;
-        else finalYPos = initialYPos - SWOOP_DROP_DISTANCE;
+        // If chopper is sufficiently below jet when it swoops, aim for swoopDropDistance units
+        //  above chopper; otherwise, just drop swoopDropDistance units from initial height
+        if (transform.position.y >= chopper.transform.position.y + swoopDropDistance)
+            finalYPos = transform.position.y - swoopDropDistance;
+        else finalYPos = initialYPos - swoopDropDistance;
 
         swoopTime += Time.deltaTime;
-        swoopRotation = Time.deltaTime * (finalSwoopAngle - initialPitch) / TIME_TO_SWOOP;
+        swoopRotation = Time.deltaTime * (finalSwoopAngle - initialPitch) / timeToSwoop;
 
-        if (swoopTime >= TIME_TO_SWOOP) {
+        if (swoopTime >= timeToSwoop) {
             // FIXME: this doesn't work; need to fiddle with finalSwoopAngle and possibly swoopRotation formula
 //              transform.Rotate(Vector3.up, finalSwoopAngle, Space.World);
             Attack();
         }
-        else transform.Rotate(Vector3.up, swoopRotation, Space.World);
+        else if (!isSwoopingHeadOn)
+            transform.Rotate(Vector3.up, swoopRotation, Space.World);
 
         Roll();
     }
@@ -266,9 +287,14 @@ public class ManageJet : MonoBehaviour {
             isSwooping = false;
             psMainLeftExhaust.startSizeMultiplier = 5;      // Intensify jets
             psMainRightExhaust.startSizeMultiplier = 5;
-            if (!chopperMoving) {
+
+            if (chopperMoving) {
                 if (isHeadingRight) speed = DEFAULT_SPEED;
                 else speed = -DEFAULT_SPEED;
+            }
+            else {
+                if (isHeadingRight) speed = 1.5f * DEFAULT_SPEED;
+                else speed = -1.5f * DEFAULT_SPEED;
             }
         }
 

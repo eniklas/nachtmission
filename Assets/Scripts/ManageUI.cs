@@ -39,8 +39,7 @@ public class ManageUI : MonoBehaviour {
     private float         blinkFreq = 1.0f;              // How fast text blinks in secs
     private float         timeSinceBlink = 0.0f;
     private const float   TANK_SPAWN_PERCENTAGE = 0.0f;  // Start spawning tanks this far into the game
-//    private const float   JET_SPAWN_PERCENTAGE = 0.25f;  // Start spawning jets this far into the game
-    private const float   JET_SPAWN_PERCENTAGE = 0.0f;  // Start spawning jets this far into the game
+    private const float   JET_SPAWN_PERCENTAGE = 0.25f;  // Start spawning jets this far into the game
     private const float   DRONE_SPAWN_PERCENTAGE = 0.5f; // Start spawning drones this far into the game
     private bool          tanksActive = false;
     private bool          jetsActive = false;

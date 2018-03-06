@@ -16,9 +16,8 @@ public class ManageEnemies : MonoBehaviour {
     private float ceiling;                              // Y position of top boundary
     private float ground;                               // Y position of bottom boundary
     private const float tankSpawnRate = 20.0f;          // Seconds between potential tank spawns
-    private const float jetSpawnRate = 15.0f;           // Seconds between potential jet spawns
-//    private const float droneSpawnRate = 60.0f;         // Seconds between potential drone spawns
-    private const float droneSpawnRate = 5.0f;         // Seconds between potential drone spawns
+    private const float jetSpawnRate = 20.0f;           // Seconds between potential jet spawns
+    private const float droneSpawnRate = 60.0f;         // Seconds between potential drone spawns
     private const int TANK_SPAWN_DISTANCE_MIN = 50;     // Min distance from chopper to spawn a tank
     private const int TANK_SPAWN_DISTANCE_MAX = 300;    // Max distance from chopper to spawn a tank
     private const float TANK_SPAWN_POS_Y = 6.3f;        // Y position to place tanks
@@ -31,6 +30,7 @@ public class ManageEnemies : MonoBehaviour {
     private const int MAX_TANKS = 4;                    // Maximum number of tanks that can exist at once
     private const int MAX_DRONES = 1;                   // Maximum number of drones that can exist at once
     public  float chopperStillMaxSpeed = 10.0f;         // Max speed at which chopper is considered to be still
+    private float jetYPos;                              // Y position to spawn a jet
     private GameObject chopper;
     public  GameObject tank;
     public  GameObject jet;
@@ -84,17 +84,23 @@ public class ManageEnemies : MonoBehaviour {
     void SpawnJet() {
         // Only spawn a jet if the chopper is in enemy territory; spawn just off the screen to the left
         if (chopper.transform.position.x < rightBoundary) {
+            // If the chopper is close to the top of the screen, spawn lower so it's visible
+            if (chopper.transform.position.y > ceiling - 2)
+                jetYPos = ceiling + 10;
+            else
+                jetYPos = chopper.transform.position.y + JET_SPAWN_DISTANCE_Y;
+
             if (chopper.GetComponent<Rigidbody>().velocity.x > chopperStillMaxSpeed &&
                 rightBoundary - chopper.transform.position.x > JET_SPAWN_DISTANCE_X)
                     GameObject.Instantiate(jet,
                         new Vector3(chopper.transform.position.x + JET_SPAWN_DISTANCE_X,
-                                    chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
+                                    jetYPos,
                                     JET_SPAWN_POS_Z),
                                     Quaternion.identity);
             else
                 GameObject.Instantiate(jet,
                     new Vector3(chopper.transform.position.x - JET_SPAWN_DISTANCE_X,
-                                chopper.transform.position.y + JET_SPAWN_DISTANCE_Y,
+                                jetYPos,
                                 JET_SPAWN_POS_Z),
                                 Quaternion.identity);
         }
