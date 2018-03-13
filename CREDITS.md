@@ -32,7 +32,6 @@ Full attribution at https://github.com/eniklas/nachtmission/blob/master/CREDITS.
 
 ## Playtesting
 Jeff Brufladt<br>
-Jitin Davda<br>
 Max Eisenbraun<br>
 Derek Keeler<br>
 Rita Keeler<br>
